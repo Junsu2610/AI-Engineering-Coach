@@ -309,7 +309,7 @@ export async function renderShareCard(container: HTMLElement, filter: DateFilter
   document.getElementById('share-download-btn')?.addEventListener('click', () => {
     if (!canvas) return;
     const link = document.createElement('a');
-    link.download = `copilot-stats-${new Date().toISOString().slice(0, 10)}.png`;
+    link.download = `agentic-engineering-stats-${new Date().toISOString().slice(0, 10)}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('Downloaded! Now share it.');
