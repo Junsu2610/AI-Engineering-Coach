@@ -34,12 +34,37 @@ import * as path from 'path';
 
 const branchRoot = path.resolve(__dirname, '..');
 
+/** Locate the `main` branch's working tree via `git worktree list`. Works regardless of where the
+ *  main checkout lives on disk (it need not be a sibling of this worktree) and is cross-platform. */
+function findMainWorktree(): string | undefined {
+  const res = spawnSync('git', ['worktree', 'list', '--porcelain'], {
+    cwd: branchRoot,
+    encoding: 'utf8',
+  });
+  if (res.status !== 0 || !res.stdout) return undefined;
+  let current: string | undefined;
+  for (const line of res.stdout.split('\n')) {
+    if (line.startsWith('worktree ')) current = line.slice('worktree '.length).trim();
+    else if (line.trim() === 'branch refs/heads/main' && current) return path.resolve(current);
+  }
+  return undefined;
+}
+
 function parseMainRoot(): string {
   const args = process.argv.slice(2);
   const i = args.indexOf('--main');
   if (i >= 0 && args[i + 1]) return path.resolve(args[i + 1]);
   if (process.env.PARITY_MAIN) return path.resolve(process.env.PARITY_MAIN);
-  return 'C:\\dev\\AI-Engineering-Coach';
+
+  // Default: discover the main worktree from git rather than hard-coding a path, so this runs on
+  // any OS and any checkout layout. Fail with an actionable message if it cannot be found.
+  const fromGit = findMainWorktree();
+  if (fromGit && fs.existsSync(path.join(fromGit, 'src', 'core', 'parser.ts'))) return fromGit;
+
+  throw new Error(
+    'parse-parity: could not locate a main checkout to compare against. Pass --main <path>, set ' +
+      'PARITY_MAIN, or add a worktree for the main branch (git worktree add <path> main).',
+  );
 }
 
 const mainRoot = parseMainRoot();

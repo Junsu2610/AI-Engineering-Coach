@@ -172,8 +172,12 @@ export function maybeForceGc(): void {
   if (now - lastForcedGcAt < FORCE_GC_MIN_INTERVAL_MS) return;
   if (process.memoryUsage().rss < FORCE_GC_RSS_THRESHOLD) return;
   lastForcedGcAt = now;
-  parseTiming.forcedGc++;
-  try { gc(); } catch { /* gc unavailable */ }
+  // Count only a GC that actually ran, so `forcedGc` matches its documented meaning even if the
+  // engine's gc() ever throws (the !gc guard above already handles the unavailable case).
+  try {
+    gc();
+    parseTiming.forcedGc++;
+  } catch { /* gc unavailable */ }
 }
 
 /* ---- Cold-parse sub-phase attribution (issue #106 follow-up) ----
