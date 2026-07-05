@@ -166,10 +166,13 @@ Rule and metric files use YAML front matter (`id`, `name`, `severity`, and relat
 
 ## GitHub / Notion Workflow Boundary
 
-- Repository docs and GitHub Issues are the task authority.
+- Repository docs are the canonical execution authority.
+- Use GitHub Issues and optional GitHub Projects for complex brainstorming, roadmap shaping, phase planning, and approved work tracking.
 - GitHub Issues are the main task tracker for approved work.
-- GitHub Projects may organize issue status, but they do not override repo docs.
-- Notion is only for dashboards, roadmap views, research notes, summaries, links, and sync metadata.
+- GitHub Projects may organize planning or issue status, but they do not override repo docs.
+- `PROJECT_GOAL.md` is the repo-local scope/progress mirror when this repo uses it.
+- `teamagent/TASKS.md` is the execution truth when team-agent work exists.
+- Notion is only for display-only dashboards, roadmap mirrors, research notes, summaries, links, and sync metadata.
 - Do not duplicate full GitHub task details into Notion task rows.
 - Legacy Notion task rows should become `Mirror Only` or `Archived` when a GitHub issue exists.
 - Notion status must not override GitHub issue status or repo plans.
