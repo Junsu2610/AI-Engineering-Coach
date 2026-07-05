@@ -1,0 +1,24 @@
+name: Security Baseline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  secret-scan:
+    name: Security Baseline / Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan tracked files for hardcoded secret patterns
+        shell: bash
+        run: |
+          pattern='(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xai-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|password[[:space:]]*[:=][[:space:]]*["'"'"'`][^"'"'"'`]+["'"'"'`]|token[[:space:]]*[:=][[:space:]]*["'"'"'`][^"'"'"'`]+["'"'"'`])'
+          if git grep -nI -E "$pattern" -- . ':!*.md'; then
+            echo "Potential hardcoded secret found"
+            exit 1
+          fi

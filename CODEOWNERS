@@ -1,0 +1,5 @@
+# Baseline owners for governance-sensitive files.
+# Replace @ptd26 with the correct GitHub user or team before rollout.
+
+* @ptd26
+.github/ @ptd26

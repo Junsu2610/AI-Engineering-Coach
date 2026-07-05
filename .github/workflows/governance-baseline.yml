@@ -1,0 +1,46 @@
+name: Governance Baseline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  governance:
+    name: Governance Baseline / Validate governance assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required governance files
+        shell: bash
+        run: |
+          required=(
+            ".github/ISSUE_TEMPLATE/task-request.md"
+            ".github/pull_request_template.md"
+            ".github/workflows/ci.yml"
+            ".github/workflows/governance-baseline.yml"
+            ".github/workflows/security-baseline.yml"
+            "CODEOWNERS"
+          )
+          for path in "${required[@]}"; do
+            test -f "$path" || { echo "Missing required file: $path"; exit 1; }
+          done
+
+      - name: Validate issue template sections
+        shell: bash
+        run: |
+          file=".github/ISSUE_TEMPLATE/task-request.md"
+          for section in "## Task ID" "## Scope" "## Out of scope" "## Acceptance" "## Test plan" "## Risk"; do
+            grep -Fq "$section" "$file" || { echo "Missing issue template section: $section"; exit 1; }
+          done
+
+      - name: Validate pull request template sections
+        shell: bash
+        run: |
+          file=".github/pull_request_template.md"
+          for section in "## Task/Issue link" "## Changed files" "## Verification" "## Evidence" "## Risk note"; do
+            grep -Fq "$section" "$file" || { echo "Missing PR template section: $section"; exit 1; }
+          done
