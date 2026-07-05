@@ -1,0 +1,16 @@
+{
+  "updated_at": null,
+  "mode": "single-workspace",
+  "active_sprint": null,
+  "workers": {
+    "manager": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "coder1": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "coder2": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "coder3": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "qa": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "architect": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "reviewer": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "security": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "verifier": { "status": "idle", "task": null, "branch": null, "worktree": null }
+  }
+}

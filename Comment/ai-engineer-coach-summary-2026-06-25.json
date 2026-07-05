@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-25T14:23:28.095Z",
+  "filter": {},
+  "totals": {
+    "sessions": 896,
+    "requests": 4132,
+    "workspaces": 76
+  },
+  "production": {
+    "totalAiLoc": 48627,
+    "totalUserLoc": 0,
+    "totalLoc": 48627,
+    "aiRatio": 1,
+    "topLanguages": [
+      {
+        "language": "python",
+        "aiLoc": 18648,
+        "userLoc": 0
+      },
+      {
+        "language": "csharp",
+        "aiLoc": 6930,
+        "userLoc": 0
+      },
+      {
+        "language": "javascript",
+        "aiLoc": 4852,
+        "userLoc": 0
+      },
+      {
+        "language": "unknown",
+        "aiLoc": 3792,
+        "userLoc": 0
+      },
+      {
+        "language": "typescript",
+        "aiLoc": 3536,
+        "userLoc": 0
+      },
+      {
+        "language": "markdown",
+        "aiLoc": 2990,
+        "userLoc": 0
+      },
+      {
+        "language": "text",
+        "aiLoc": 2529,
+        "userLoc": 0
+      },
+      {
+        "language": "xaml",
+        "aiLoc": 1076,
+        "userLoc": 0
+      },
+      {
+        "language": "powershell",
+        "aiLoc": 1005,
+        "userLoc": 0
+      },
+      {
+        "language": "yaml",
+        "aiLoc": 624,
+        "userLoc": 0
+      }
+    ]
+  },
+  "activity": {
+    "activeDays": 49,
+    "firstActivityDate": "2026-04-04",
+    "lastActivityDate": "2026-06-25",
+    "maxStreak": 24
+  },
+  "flow": {
+    "overallScore": 78,
+    "deepFlowDays": 37,
+    "totalDays": 45,
+    "avgBlockMin": 1001,
+    "suggestions": [
+      "Your deepest flow tends to happen around 4:00 (score 88). Block this time for uninterrupted work.",
+      "Strong flow patterns detected. Maintain your current work blocks and keep distractions at bay."
+    ]
+  },
+  "antiPatterns": {
+    "totalOccurrences": 30890,
+    "topPatterns": [
+      {
+        "id": "no-custom-instructions",
+        "name": "No Custom Instructions",
+        "severity": "medium",
+        "group": "tool-mastery",
+        "occurrences": 4132,
+        "description": "Only 0% of requests use custom instructions (0/4132). Missing out on personalized responses.",
+        "suggestion": "Create a .github/copilot-instructions.md or .instructions.md file in your workspace to give Copilot persistent context about your project conventions, stack, and coding style."
+      },
+      {
+        "id": "no-slash-commands",
+        "name": "No Slash Commands",
+        "severity": "low",
+        "group": "tool-mastery",
+        "occurrences": 4132,
+        "description": "Only 0 of 4132 requests use slash commands. Slash commands produce more targeted responses.",
+        "suggestion": "Try /fix for bugs, /explain for understanding code, /tests for test generation, /doc for documentation."
+      },
+      {
+        "id": "no-file-context",
+        "name": "Missing File Context",
+        "severity": "medium",
+        "group": "prompt-quality",
+        "occurrences": 3451,
+        "description": "84% of requests have no file references. Copilot gives better answers with file context.",
+        "suggestion": "Use #file to reference relevant files, or open files in the editor so Copilot can use them as context."
+      },
+      {
+        "id": "low-context-provision-codex",
+        "name": "Low Context Provision (Codex)",
+        "severity": "high",
+        "group": "tool-mastery",
+        "occurrences": 3375,
+        "description": "Codex: 3375 requests with context score 15/100. Only 8% include file references, 0% use custom instructions.",
+        "suggestion": "In Codex, reference files with #file, add .instructions.md files, and use skills/prompts to provide richer context."
+      },
+      {
+        "id": "cache-hit-starvation",
+        "name": "Prompt Cache Starvation",
+        "severity": "medium",
+        "group": "tool-mastery",
+        "occurrences": 3249,
+        "description": "3249 requests had prompts >5000 tokens but only 9.1% of input tokens came from cache. Each long-prompt request is paying full price for context the model has seen before.",
+        "suggestion": "Stabilize the front of your prompts: keep custom instructions short and stable, avoid frequent compaction, prefer file references over pasted code, and avoid clearing chat mid-task. Within a session, repeated prefixes get cached and re-used for free."
+      },
+      {
+        "id": "slow-responses",
+        "name": "Slow Responses",
+        "severity": "low",
+        "group": "session-hygiene",
+        "occurrences": 2772,
+        "description": "2772 requests took over 30 seconds (avg 1408s). May indicate overly broad prompts.",
+        "suggestion": "Break complex tasks into smaller, focused requests. Use lighter models for simple questions."
+      },
+      {
+        "id": "weekend-overwork",
+        "name": "Weekend Overwork",
+        "severity": "low",
+        "group": "session-hygiene",
+        "occurrences": 1972,
+        "description": "1972 requests (48%) happen on weekends. This may indicate work-life balance issues.",
+        "suggestion": "Consider maintaining boundaries between work and personal time. Sustained overwork leads to burnout and decreased productivity."
+      },
+      {
+        "id": "agentic-no-tools",
+        "name": "Agentic Without Tools",
+        "severity": "low",
+        "group": "tool-mastery",
+        "occurrences": 1604,
+        "description": "1604 agentic requests used no tools. Agent mode is most effective when tools are enabled.",
+        "suggestion": "Ensure tools are enabled in agent mode for file search, terminal access, and web search capabilities."
+      },
+      {
+        "id": "repeated-prompts",
+        "name": "Repeated Prompts",
+        "severity": "high",
+        "group": "prompt-quality",
+        "occurrences": 1583,
+        "description": "1583 requests are near-duplicates across 138 distinct prompts. This wastes quota without new results.",
+        "suggestion": "If a prompt isn't working, rephrase it or provide more context instead of retrying the same message."
+      },
+      {
+        "id": "late-night-coding",
+        "name": "Late-Night Coding",
+        "severity": "low",
+        "group": "session-hygiene",
+        "occurrences": 1492,
+        "description": "1492 requests were made between midnight and 5am. Late-night coding correlates with more bugs and lower quality.",
+        "suggestion": "Consider establishing healthier work hours. Quality drops significantly when fatigued."
+      }
+    ]
+  }
+}
