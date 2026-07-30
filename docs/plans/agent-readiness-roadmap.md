@@ -23,5 +23,6 @@ Keep AI Engineering Coach startup context stable without bloating sessions: priv
 
 ## Next Updates
 
-1. Refresh the startup instructions when worker boundaries, rule trust flow, or packaging checks materially change.
-2. Add a short prompt for rule-authoring review only if the existing authoring docs stop being enough.
+1. Execute [system-prompt-progressive-disclosure.md](./system-prompt-progressive-disclosure.md): slim `AGENTS.md`, extract procedures into `skills/`, and hill-climb with the eval table in that plan.
+2. Refresh the startup instructions when worker boundaries, rule trust flow, or packaging checks materially change.
+3. Add a short prompt for rule-authoring review only if the existing authoring docs stop being enough.
