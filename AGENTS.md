@@ -213,3 +213,12 @@ Never:
 - Modify files under the user's session-log directories at runtime - this extension is strictly read-only with respect to user data.
 - Add telemetry, analytics, or remote logging.
 - Skip hooks (`--no-verify`) or push with failing `npm run check`.
+
+## Cursor Cloud specific instructions
+
+The startup update script runs `npm ci`. Standard commands are in the "Build, test, and ship" table above; the notes below only cover non-obvious cloud caveats.
+
+- **Node version:** the VM's default `node` (`/exec-daemon/node`) is 22.14, which is too old for `cspell` (needs `>=22.18`), so `npm run spellcheck` and the full `npm run check` gate fail on it. A newer Node 22 is installed via `nvm` and set as `nvm alias default`, and `~/.bashrc` prepends it to `PATH` so fresh shells use it. If a shell still reports 22.14, run `nvm use default` before `npm run check`.
+- **Known pre-existing spellcheck flag:** `npm run spellcheck` reports one unknown word in this file (the `team-agent` directory name in the "GitHub / Notion Workflow Boundary" section, written without the hyphen). It is pre-existing on `main`, unrelated to your change.
+- **Running the app (no VS Code Extension Host):** this is a VS Code extension, so there is no headless "run" of the extension itself here. The dashboard UI (the app) is a webview that renders the built `dist/webview/app.js`. To see it in a browser: `npm run build`, then serve the repo (`npx serve . -p 3999 --no-clipboard`) and open `http://localhost:3999/tests/e2e/harness.html`. The harness mocks the VS Code RPC layer, so pages render against sample data.
+- **E2E tests:** `npm run test:e2e` (Playwright + chromium; browser is installed). E2E is NOT part of the CI gate (`.github/workflows/ci.yml` runs only `check`, `build`, `check-size`, `package`). On `main` the Output/Burndown specs fail and burndown specs are skipped because they assert token/credit UI gated behind `FF_TOKEN_REPORTING_ENABLED = false` in [`src/core/constants.ts`](src/core/constants.ts); the dashboard/timeline/patterns/anti-patterns/context specs pass.
