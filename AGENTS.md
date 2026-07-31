@@ -5,211 +5,43 @@ description: VS Code extension that analyzes local AI session logs and surfaces 
 
 # AGENTS.md
 
-You are an experienced TypeScript engineer working on the **AI Engineer Coach** VS Code extension. Your job is to keep analysis correct, the extension host responsive, and user data private - this codebase has zero telemetry and never modifies user session logs.
+You are an experienced TypeScript engineer on the **AI Engineer Coach** VS Code extension.
+Keep analysis correct, the extension host responsive, and user data private.
 
 Respond to the user in Vietnamese with full diacritics. Keep code, docs, task files, commits, PR text, and release notes in English.
 
-If you're a human, [`README.md`](README.md) is the better starting point.
+Humans start at [`README.md`](README.md). Load only the skill and files needed for the current task.
 
-## Tech stack
+## Hard boundaries
 
-- **Node** >= 20 (CI uses Node 22)
-- **TypeScript** 6.0.3, strict mode
-- **VS Code engine** `^1.125.0` (`@types/vscode` 1.125.0)
-- **Bundler** esbuild 0.28.1 (`esbuild.mjs`, output -> `dist/extension.js`)
-- **Tests** vitest 4.1.9 (unit + inline rule tests), Playwright 1.61.1 (e2e webview)
-- **Lint** eslint 10.6.0
-- **Docs site** Hugo (sources in `docs/content/`, published to `microsoft.github.io/AI-Engineering-Coach/`)
+- **No telemetry**, remote logging, or network calls in core analysis paths.
+- **Never modify** user session log files (read-only).
+- Keep parse, warm-up, and cache writes in existing `src/core/*-worker.ts` workers.
+- Run `npm run check` before claiming code changes complete; docs-only work may use targeted checks.
+- Ask first before: new runtime deps, host/worker network calls, rule-trust or DSL changes, public command/config/ID renames, or `engines.vscode` / Node bumps.
+- Never commit secrets or edit generated artifacts (`dist/`, `docs/public/`, `*.vsix`, `node_modules/`, `test-results/`, `.vscode-test/`).
 
-## Repository map
+## Skills (progressive disclosure)
 
-```text
-AI-Engineering-Coach/
-|-- src/
-|   |-- extension.ts             # VS Code activation entry point
-|   |-- core/                    # Parsers, analyzers, the rule engine
-|   |   |-- analyzer.ts          # Top-level coordinator across analyzer-*.ts
-|   |   |-- parser.ts            # Reads session logs from disk
-|   |   |-- parse-worker.ts      # Worker thread: logsDirs -> progress + result/error
-|   |   |-- warm-up-worker.ts    # Worker thread: sessions -> antiPatterns + configHealth
-|   |   |-- cache-write-worker.ts# Worker thread: persists cache payload
-|   |   |-- metric-engine.ts     # DSL evaluator for rules and metrics
-|   |   |-- rule-loader.ts       # Loads built-in + personal + project rule layers
-|   |   |-- rule-trust.ts        # Trust gate (pending -> review -> approve -> reload)
-|   |   |-- rules/<id>.md        # Built-in detection rules (markdown + DSL)
-|   |   `-- metrics/<id>.metric.md # Built-in metrics referenced by rules
-|   |-- webview/                 # Dashboard UI: app.ts plus page-*.ts per route
-|   |-- chat/                    # VS Code Chat participant integration
-|   |-- mcp/                     # Tools exposed to the chat participant / MCP
-|   `-- summary-export-vscode.ts # Markdown/JSON summary export
-|-- docs/
-|   |-- content/                 # Hugo source for the published docs site
-|   |-- AUTHORING_RULES.md       # How to author a rule or metric
-|   `-- hugo.toml
-|-- scripts/                     # Packaging, smoke tests, data inventory tools
-|-- skills/                      # Reusable instructions for recurring agentic tasks
-|-- tests/e2e/                   # Playwright end-to-end tests
-`-- AGENTS.md                    # You are here
-```
+Match the task, then read that skill from [`skills/`](skills/) (see [`skills/README.md`](skills/README.md)):
 
-## Build, test, and ship
-
-| Task | Command |
+| Skill | When |
 |---|---|
-| Install dependencies | `npm ci` |
-| Bundle the extension | `npm run build` |
-| Watch-mode rebuild | `npm run watch` |
-| Type-check | `npm run typecheck` |
-| Lint | `npm run lint` |
-| Spellcheck markdown + TS | `npm run spellcheck` |
-| Unit tests (vitest) | `npm test` |
-| All checks (CI gate) | `npm run check` |
-| End-to-end (Playwright) | `npm run test:e2e` |
-| Package the VSIX | `npm run package` (see [skills/package-extension.md](skills/package-extension.md)) |
-| Bundle-size budget | `npm run check-size` |
+| [`update-docs`](skills/update-docs.md) | Add or update a Hugo page under `docs/content/` |
+| [`package-extension`](skills/package-extension.md) | Build an installable `.vsix` |
+| [`author-rule-or-metric`](skills/author-rule-or-metric.md) | Author or edit a built-in/personal/project rule or metric |
+| [`worker-boundary-change`](skills/worker-boundary-change.md) | Touch parse / warm-up / cache workers or extension-host perf |
+| [`git-and-verification`](skills/git-and-verification.md) | Branch, commit, PR, or verification commands in this repo |
+| [`agent-prompt-workflows`](skills/agent-prompt-workflows.md) | Spec-first, checkpoint, review, or weekly coach prompts |
 
-CI runs `npm run check` (typecheck + lint + spellcheck + knip + lockfile lint + test) plus the size check on every PR. Run the smallest relevant verification set locally before handoff.
+## Subagents
 
-## Skills
+**Use** for parallel exploration of independent trees, or isolated review/security with a clean context.
+**Do not use** for a single-file edit, one shell command, or work that needs the parent's open decision context.
 
-Repo-specific instructions for recurring tasks live in [`skills/`](skills/). They are symlinked into [`.claude/skills/`](.claude/skills/) and [`.github/instructions/`](.github/instructions/) so popular agent harnesses pick them up automatically. See [`skills/README.md`](skills/README.md) for the authoring format.
+## Pointers
 
-Available today:
-
-- [`skills/update-docs.md`](skills/update-docs.md) - author or update a Hugo doc page.
-- [`skills/package-extension.md`](skills/package-extension.md) - produce an installable `.vsix`.
-
-## Rule and metric authoring
-
-Detection rules and metrics are the primary extensibility surface - markdown files with YAML front matter and a small DSL, no code changes required.
-
-- Built-in rules: [`src/core/rules/<id>.md`](src/core/rules/)
-- Built-in metrics: [`src/core/metrics/<id>.metric.md`](src/core/metrics/)
-- Authoring guide with annotated examples: [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md)
-- Trust layers (built-in / personal / project) are gated through [`src/core/rule-trust.ts`](src/core/rule-trust.ts)
-
-Rules ship with inline `# Tests` blocks that run as part of `npm test`.
-
-## Workers
-
-Heavy lifting happens off the extension host thread:
-
-- [`src/core/parse-worker.ts`](src/core/parse-worker.ts) - `logsDirs` -> `progress` + `result` or `error`
-- [`src/core/warm-up-worker.ts`](src/core/warm-up-worker.ts) - `sessions` -> `antiPatterns` + `configHealth`
-- [`src/core/cache-write-worker.ts`](src/core/cache-write-worker.ts) - persists the cache payload
-
-## Local rule trust flow
-
-Rules move `pending -> review -> approve -> reload`; edits revoke trust. See [`docs/content/improve/anti-patterns.md`](docs/content/improve/anti-patterns.md) and [`docs/content/improve/rule-editor.md`](docs/content/improve/rule-editor.md).
-
-## Documentation index
-
-These pages are published at `https://microsoft.github.io/AI-Engineering-Coach/`. The links below point at source markdown so they resolve on GitHub too.
-
-- Top-level: [`docs/content/_index.md`](docs/content/_index.md)
-- Features: [`docs/content/features/_index.md`](docs/content/features/_index.md)
-- Getting Started
-  - [Installation](docs/content/getting-started/installation.md)
-  - [Supported Tools](docs/content/getting-started/supported-tools.md)
-- Observe
-  - [Dashboard](docs/content/observe/dashboard.md)
-  - [Timeline](docs/content/observe/timeline.md)
-- Measure
-  - [Output](docs/content/measure/output.md)
-  - [Burndown](docs/content/measure/burndown.md)
-  - [Activity Patterns](docs/content/measure/patterns.md)
-- Improve
-  - [Anti-Patterns](docs/content/improve/anti-patterns.md)
-  - [Rule Editor](docs/content/improve/rule-editor.md)
-  - [Rule Playground](docs/content/improve/rule-playground.md)
-  - [Data Explorer](docs/content/improve/data-explorer.md)
-  - [Skill Finder](docs/content/improve/skill-finder.md)
-  - [Context Health](docs/content/improve/context-health.md)
-- Level Up
-  - [Achievements](docs/content/level-up/achievements.md)
-  - [Learning Center](docs/content/level-up/learning.md)
-  - [Agentic SDLC](docs/content/level-up/sdlc.md)
-  - [Share](docs/content/level-up/share.md)
-
-## Code style
-
-Strict TypeScript, no `any` in new code, prefer named exports, and keep heavy work off the extension-host thread.
-
-```ts
-// Good: typed, narrow, awaitable, off-thread.
-export async function parseSessions(
-  logsDirs: string[],
-  onProgress: (p: LoadProgress) => void,
-): Promise<ParseResult> {
-  return runWorker("parse-worker", { logsDirs }, onProgress);
-}
-
-// Bad: untyped, blocks the extension host, swallows errors.
-export function parseSessions(logsDirs) {
-  try {
-    return require("./parser").parseSync(logsDirs);
-  } catch {
-    return null;
-  }
-}
-```
-
-Rule and metric files use YAML front matter (`id`, `name`, `severity`, and related metadata) followed by markdown body and an optional `# Tests` block. See [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md).
-
-## Git workflow
-
-- Branch from `main`: `feat/<scope>`, `fix/<scope>`, `docs/<scope>`, `chore/<scope>`.
-- Commits use Conventional Commits prefixes (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
-- Run `npm run check` (and `npm run test:e2e` if you touched the webview) before pushing.
-- Reference the issue in the commit body or PR description (`Resolves #123`).
-- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the CLA and review process.
-
-## GitHub / Notion Workflow Boundary
-
-- Repository docs are the canonical execution authority.
-- Use GitHub Issues and optional GitHub Projects for complex brainstorming, roadmap shaping, phase planning, and approved work tracking.
-- GitHub Issues are the main task tracker for approved work.
-- GitHub Projects may organize planning or issue status, but they do not override repo docs.
-- `PROJECT_GOAL.md` is the repo-local scope/progress mirror when this repo uses it.
-- `teamagent/TASKS.md` is the execution truth when team-agent work exists.
-- Notion is only for display-only dashboards, roadmap mirrors, research notes, summaries, links, and sync metadata.
-- Do not duplicate full GitHub task details into Notion task rows.
-- Legacy Notion task rows should become `Mirror Only` or `Archived` when a GitHub issue exists.
-- Notion status must not override GitHub issue status or repo plans.
-
-## Accepted plan archival
-
-- When a plan is approved, archive it in `docs/plans/` as concise English markdown.
-- Do not create GitHub Issues, Notion tasks, or edit task boards from an accepted plan unless explicitly asked.
-
-## Conventions
-
-- **No telemetry, no network calls** in core analysis paths. Optional AI features may use the VS Code Copilot language model API only when the user explicitly invokes them.
-- **Read-only with respect to user data.** The extension never modifies session log files.
-- **Inclusive language.** Prefer allowlist/denylist, primary/replica, and similar neutral terms.
-- **Author over generate.** Rules and skills are markdown - write them intentionally, not as opaque generated artifacts.
-
-## Boundaries
-
-Always:
-
-- Run `npm run check` before declaring work complete for code changes.
-- Add or update inline `# Tests` blocks when changing rule or metric behavior.
-- Keep parsing, warm-up, and cache writes inside their existing workers (`src/core/*-worker.ts`).
-- Use repo-relative markdown links so they resolve on GitHub and in the published Hugo site.
-
-Ask first:
-
-- Adding a runtime dependency (bundle-size budget enforced by `npm run check-size`).
-- Introducing a network call from the extension host or a worker.
-- Changing the rule trust flow (`pending -> review -> approve -> reload`) or the DSL surface.
-- Renaming public commands, configuration keys, or extension IDs.
-- Bumping `engines.vscode` or the Node version.
-
-Never:
-
-- Commit secrets, tokens, `.env` files, or anything matching `local/`, `marketing/`, `PROPOSED_FIXES.md`, or other `.gitignore` entries.
-- Edit generated artifacts: `dist/`, `docs/public/`, `*.vsix`, `node_modules/`, `test-results/`, `.vscode-test/`.
-- Modify files under the user's session-log directories at runtime - this extension is strictly read-only with respect to user data.
-- Add telemetry, analytics, or remote logging.
-- Skip hooks (`--no-verify`) or push with failing `npm run check`.
+- Rule/metric guide: [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md)
+- Docs site sources: [`docs/content/`](docs/content/)
+- Roadmap: [`PROJECT_GOAL.md`](PROJECT_GOAL.md) · tasks: [`teamagent/TASKS.md`](teamagent/TASKS.md)
+- Startup-context plan: [`docs/plans/system-prompt-progressive-disclosure.md`](docs/plans/system-prompt-progressive-disclosure.md)

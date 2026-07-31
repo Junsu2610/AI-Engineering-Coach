@@ -14,14 +14,18 @@ This plan optimizes **this repository's agent startup context**, not application
 
 ## Current Baseline (inventory)
 
-| Layer | Path | Approx size | Role today |
-|---|---|---|---|
-| Always-on (primary) | `AGENTS.md` | ~215 lines | Full stack map, docs index, style, git, boundaries |
-| Always-on (Copilot) | `.github/copilot-instructions.md` | ~10 lines | Short pointer + hard rules |
-| Chat system prompt | `src/chat/system-prompt.ts` | Persona + full tool heuristic list | Injected every `@aicoach` turn |
-| Skills | `skills/*.md` (+ symlinks) | 2 skills | `update-docs`, `package-extension` |
-| Workflow prompts | `docs/agent-prompts/*.md` | 7 files | Manual/context-first workflows, not auto-loaded as skills |
-| Extra skill router | `.github/skills/agentic-workflows/SKILL.md` | Dispatcher | Loads remote `gh-aw` prompts |
+Measured on `origin/main` before Phase 2–4 (2026-07-31):
+
+| Layer | Path | Lines | Bytes | Role today |
+|---|---|---:|---:|---|
+| Always-on (primary) | `AGENTS.md` | 168 | 10837 | Full stack map, docs index, style, git, boundaries |
+| Always-on (Copilot) | `.github/copilot-instructions.md` | 9 | ~1KB | Short pointer + hard rules |
+| Chat system prompt | `src/chat/system-prompt.ts` | 38 | — | Persona + full tool heuristic dump |
+| Skills | `skills/*.md` (+ pointers) | 2 skills | — | `update-docs`, `package-extension` |
+| Workflow prompts | `docs/agent-prompts/*.md` | 7 files | — | Manual/context-first workflows, not auto-loaded as skills |
+| Extra skill router | `.github/skills/agentic-workflows/SKILL.md` | — | — | Dispatcher for remote `gh-aw` prompts |
+
+Context Health note: `computeProgressiveDisclosureScore` awards points for compact instructions, presence of skills, and scoped prompts/agents (`src/core/config-health-helpers.ts`). Slimming `AGENTS.md` and adding skills aligns with that score model (compact + skills + scoped pointers).
 
 Pain mirrors the talk:
 
@@ -66,9 +70,9 @@ Subagents (allowlist only)
   `-- Never: "tiny specialist" that only runs one shell command
 ```
 
-## Success metrics (evals)
+## Success metrics (eval scenarios)
 
-Create a lightweight harness under `docs/plans/evals/` or `scripts/` (docs-first preferred) with fixed scenarios. Score pass/fail manually or via a thin script that checks artifacts — no new online model dependency required for v1.
+Create a lightweight harness under `docs/plans/eval-scenarios/` or `scripts/` (docs-first preferred) with fixed scenarios. Score pass/fail manually or via a thin script that checks artifacts — no new online model dependency required for v1.
 
 ### Baseline scenarios (minimum set)
 
@@ -178,16 +182,54 @@ No new orchestration framework in this phase.
 | Duplicate sources drift | Skills own procedures; `AGENTS.md` only links; Copilot stub stays ≤15 lines |
 | Chat prompt change regresses tool choice | R3 scenarios + keep `TOOL_DEFS` as single source of tool metadata |
 
+## Phase 1 classification (`AGENTS.md` sections)
+
+| Section | Bucket | Destination |
+|---|---|---|
+| Front matter + identity | A | Slim `AGENTS.md` |
+| Vietnamese/English communication contract | A | Slim `AGENTS.md` |
+| Tech stack detail | C | Keep in README / package metadata; omit from always-on |
+| Repository map tree | C | Link to README / docs; omit tree |
+| Build / test / ship matrix | B | `skills/git-and-verification.md` |
+| Skills intro + existing skill list | A/B | Short index in slim core; bodies stay in `skills/` |
+| Rule and metric authoring | B | `skills/author-rule-or-metric.md` → `docs/AUTHORING_RULES.md` |
+| Workers | B | `skills/worker-boundary-change.md` |
+| Local rule trust flow | B/C | Pointer via authoring skill + improve docs |
+| Documentation index | C | `docs/content/`; not always-on |
+| Code style sample | C | Prefer skill/docs when editing TS style |
+| Git workflow | B | `skills/git-and-verification.md` |
+| GitHub / Notion boundary | A (short) / B | Hard truth line in Copilot stub; detail in git skill |
+| Accepted plan archival | A (one line) | Copilot stub + plan docs |
+| Conventions + Boundaries Always/Ask/Never | A | Slim `AGENTS.md` hard boundaries |
+| Subagent policy | A | Slim `AGENTS.md` (Phase 5) |
+| Agent prompt workflows | B | `skills/agent-prompt-workflows.md` |
+
+## Eval sheet
+
+| ID | Before (dry-run on bloated always-on) | After Phase 2–4 |
+|---|---|---|
+| F1 Docs page | Fail-ish: always-on restates full docs index; skill exists but buried | Pass: slim core points at `update-docs` only |
+| F2 New rule | Partial: authoring section in always-on; no dedicated skill | Pass: `author-rule-or-metric` + AUTHORING_RULES pointer |
+| F3 Parse path | Pass wording in Boundaries, easy to miss among reference | Pass: dedicated `worker-boundary-change` skill |
+| R1 Privacy | Pass | Pass: telemetry + read-only still greppable in slim core |
+| R2 Package VSIX | Pass via existing skill | Pass: skill retained + listed in index |
+| R3 Chat tools | Fail: full TOOL_DEFS dump every turn | Pass: routing policy + first-sentence catalog |
+
+Pass rate target: 6/6 after Phase 2–4 (manual dry-run against artifacts).
+
 ## Results (fill during execution)
 
 | Metric | Before | After |
 |---|---|---|
-| `AGENTS.md` lines | 215 | |
-| Copilot instructions lines | 10 | |
-| Skill count | 2 | |
-| Eval pass rate (F1–F3, R1–R3) | | |
-| Chat prompt strategy | Full tool dump | |
+| `AGENTS.md` lines | 168 | 34 |
+| `AGENTS.md` bytes | 10837 | 2723 |
+| Copilot instructions lines | 9 | 9 |
+| Skill count | 2 | 6 |
+| Eval pass rate (F1–F3, R1–R3) | ~2–3/6 | 6/6 (artifact dry-run) |
+| Chat prompt strategy | Full tool dump | Domain routing + compact catalog |
 
 ## Approval / archival
 
 This document is the execution plan. After approval, implement via the PR slices above. Do not spawn tracker issues from this plan unless asked. Update [agent-readiness-roadmap.md](./agent-readiness-roadmap.md) when the slim core lands so startup-context guidance stays consistent.
+
+**Status (2026-07-31):** Phases 0–5 implemented on branch `docs/progressive-disclosure-impl` (slim core, four new skills, chat progressive heuristics + unit tests). Phase 6 hill-climb recorded in the eval sheet above; revisit if agents miss skill discovery in real sessions.
