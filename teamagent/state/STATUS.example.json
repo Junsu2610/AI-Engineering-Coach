@@ -7,6 +7,7 @@
     "coder1": { "status": "idle", "task": null, "branch": null, "worktree": null },
     "coder2": { "status": "idle", "task": null, "branch": null, "worktree": null },
     "coder3": { "status": "idle", "task": null, "branch": null, "worktree": null },
+    "coder-mini": { "status": "idle", "task": null, "branch": null, "worktree": null },
     "qa": { "status": "idle", "task": null, "branch": null, "worktree": null },
     "architect": { "status": "idle", "task": null, "branch": null, "worktree": null },
     "reviewer": { "status": "idle", "task": null, "branch": null, "worktree": null },

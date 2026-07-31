@@ -22,3 +22,7 @@ marketing/
 
 # Playwright test results
 test-results/
+
+.teamworktrees/
+
+teamagent/state/STATUS.json

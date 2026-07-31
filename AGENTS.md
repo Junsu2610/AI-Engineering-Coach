@@ -9,7 +9,6 @@ You are an experienced TypeScript engineer on the **AI Engineer Coach** VS Code 
 Keep analysis correct, the extension host responsive, and user data private.
 
 Respond to the user in Vietnamese with full diacritics. Keep code, docs, task files, commits, PR text, and release notes in English.
-
 Humans start at [`README.md`](README.md). Load only the skill and files needed for the current task.
 
 ## Hard boundaries
@@ -21,9 +20,12 @@ Humans start at [`README.md`](README.md). Load only the skill and files needed f
 - Ask first before: new runtime deps, host/worker network calls, rule-trust or DSL changes, public command/config/ID renames, or `engines.vscode` / Node bumps.
 - Never commit secrets or edit generated artifacts (`dist/`, `docs/public/`, `*.vsix`, `node_modules/`, `test-results/`, `.vscode-test/`).
 
-## Skills (progressive disclosure)
+## Agent paths
 
-Match the task, then read that skill from [`skills/`](skills/) (see [`skills/README.md`](skills/README.md)):
+Default: match task → read one skill from [`skills/`](skills/) (see table). **team-*** (`team-task`, `team-auto`, …): [`teamagent/BOOTSTRAP.md`](teamagent/BOOTSTRAP.md) only — not TASKS/HISTORY/PROTOCOL unless bootstrap says so.
+Subagents: parallel exploration or isolated review — not single-file edits or parent-context decisions.
+
+## Skills
 
 | Skill | When |
 |---|---|
@@ -34,14 +36,4 @@ Match the task, then read that skill from [`skills/`](skills/) (see [`skills/REA
 | [`git-and-verification`](skills/git-and-verification.md) | Branch, commit, PR, or verification commands in this repo |
 | [`agent-prompt-workflows`](skills/agent-prompt-workflows.md) | Spec-first, checkpoint, review, or weekly coach prompts |
 
-## Subagents
-
-**Use** for parallel exploration of independent trees, or isolated review/security with a clean context.
-**Do not use** for a single-file edit, one shell command, or work that needs the parent's open decision context.
-
-## Pointers
-
-- Rule/metric guide: [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md)
-- Docs site sources: [`docs/content/`](docs/content/)
-- Roadmap: [`PROJECT_GOAL.md`](PROJECT_GOAL.md) · tasks: [`teamagent/TASKS.md`](teamagent/TASKS.md)
-- Startup-context plan: [`docs/plans/system-prompt-progressive-disclosure.md`](docs/plans/system-prompt-progressive-disclosure.md)
+Pointers: [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md) · [`PROJECT_GOAL.md`](PROJECT_GOAL.md) · [`skills/README.md`](skills/README.md)

@@ -30,8 +30,13 @@ Done:
 - Context health, skill finder, anti-patterns, output, timeline, and learning
   pages are documented.
 - Repo-local agent readiness docs and workflow guardrails exist.
+- Progressive disclosure harness (slim AGENTS, six skills, chat routing) and
+  hill-climb eval guardrails (`docs/plans/eval-scenarios/`, `npm run check:harness`).
+- Harness and workflow optimization plan archived
+  (`docs/plans/harness-and-workflow-optimization.md`).
 
 In Progress:
+- P2 warning debt reduction through focused, testable tasks.
 - Keep docs, skills, rules, and package metadata aligned as the upstream project
   evolves.
 
@@ -57,9 +62,11 @@ Pending:
 
 ## Next Focus
 
-1. Keep the slim `AGENTS.md` + `skills/` progressive-disclosure path aligned as procedures change.
-2. Reduce warning debt only through focused, testable tasks.
-3. Run `npm run check` before claiming behavior changes complete.
+1. Keep `npm run check:harness` green when skills or always-on context change.
+2. Run weekly coach review (`docs/agent-prompts/weekly-coach-review.md`) against
+   `summary/ai-engineer-coach-summary-*.md` for this repo workspace.
+3. Reduce warning debt only through focused, testable tasks.
+4. Run `npm run check` before claiming behavior changes complete.
 
 ## Last Updated
 

@@ -1,4 +1,6 @@
-# {{PROJECT_TITLE}} - Lightweight Multi-Agent Team
+# AI Engineer Coach — Lightweight Multi-Agent Team
+
+Load this folder only when the user invokes `team-*` skills or commands — not on every session start.
 
 This is a small-team agent protocol for repos under `D:\01_PROJECT_CODE`.
 It keeps the workflow simple, but adds stronger planning, verification, status,
@@ -20,7 +22,7 @@ and optional worktree isolation inspired by heavier orchestration systems.
 
 ## Core Rules
 
-- Source edits happen on `D:\01_PROJECT_CODE\<project>`, not `Q:` or NAS.
+- Source edits happen on `D:\01_PROJECT_CODE\AI Engineering Coach`, not `Q:` or NAS.
 - `TASKS.md` is the sprint board. `state/STATUS.json` is local live status.
 - Coders edit only their ownership scope.
 - Reviewer/verifier/security roles do not self-approve their own work.
@@ -42,7 +44,7 @@ Agent = Reasoning + Memory + Context + Skills + Orchestration
 | Context | Files, logs, task scope, standards, and evidence loaded for this step |
 | Skills | Shell, edit, search, browser, MCP, deploy/check/fix skills, subagents |
 | Orchestration | Manager assignment, sequencing, dedupe, QA/evidence gates, stop rules |
- 
+
 Do not dispatch a worker until Memory, Context, allowed Skills, and the
 Orchestration path are clear.
 

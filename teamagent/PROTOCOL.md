@@ -6,7 +6,6 @@
 feat/coder<N>-T<id>-<slug>
 fix/coder<N>-T<id>-<slug>
 docs/manager-T<id>-<slug>
-qa/T<id>-<slug>
 ```
 
 ## Commit Format
@@ -55,30 +54,6 @@ git branch -d feat/coder1-T001-slug
 
 Never remove a dirty worktree. Preserve and report it.
 
-## Secret Scan
-
-Mandatory before staging:
-
-```powershell
-rg -n "(api[_-]?key|secret|password|token|jwt|credential|sk-|xai-|github_pat|ghp_)" .
-```
-
-Environment variable references are OK. Hardcoded values are not.
-
-## Evidence Rules
-
-Completion claims require fresh command output.
-
-Verification tiers:
-
-| Tier | Required evidence |
-|---|---|
-| quick | targeted test or smoke check |
-| standard | tests + lint/type/build if available |
-| strict | standard + reviewer + verifier + security if sensitive |
-
-No DONE state if evidence is missing unless Manager records why verification is impossible.
-
 ## Communication Blocks
 
 Blocked:
@@ -102,8 +77,7 @@ Review request:
 ```text
 **REVIEW - T-<id>** by <slot> @ <ISO timestamp>
 Branch: <branch>
-Evidence: <commands/results>
-Needs: reviewer|security|verifier|qa
+Ready: manager-closeout
 ```
 
 Context handoff:
@@ -113,15 +87,14 @@ Context handoff:
 Memory: <PROJECT_GOAL/TASKS/plans/docs used>
 Context: <files/logs/tests inspected>
 Skills: <tools/skills/subagents used>
-Next: <what Manager/QA should inspect next>
+Next: <what Manager should inspect next>
 ```
 
 Approval:
 
 ```text
 **APPROVED - T-<id>** by <role> @ <ISO timestamp>
-Evidence: <commands/results>
-Residual risk: <none|notes>
+Changed: <files>
 ```
 
 ## Forbidden
@@ -131,5 +104,4 @@ Residual risk: <none|notes>
 - Editing outside ownership scope.
 - Committing secrets or runtime/private data.
 - Editing source directly on `Q:`/NAS.
-- Self-approval by the author.
 - Merging without Manager approval.

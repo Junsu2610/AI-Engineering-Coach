@@ -15,13 +15,12 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ## How to Contribute
 
 1. **Fork** the repository and create your branch from `main`.
-2. **Install dependencies**: `npm install`
-3. **Build**: `npm run build`
-4. **Run tests**: `npm test`
-5. **Lint**: `npm run lint`
-6. If you've added code, add tests that cover your changes.
-7. Ensure the test suite passes and linting is clean.
-8. Submit a **pull request**.
+2. **Install dependencies**: `npm ci`
+3. **Verify your changes**: `npm run check` (primary CI gate — typecheck, lint, spellcheck, tests, and related checks).
+4. If you've added code, add tests that cover your changes.
+5. Submit a **pull request**.
+
+See [`skills/git-and-verification.md`](skills/git-and-verification.md) for branch naming, commit conventions, and the full verification matrix.
 
 ## Reporting Issues
 

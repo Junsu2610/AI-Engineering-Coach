@@ -1,12 +1,11 @@
-# Coder and QA Playbook
+# Coder Playbook
 
 ## Coder Rules
 
 1. Edit only files in your ownership scope.
 2. Do not refactor unrelated code.
-3. Add or update tests for behavior changes.
-4. Run fresh checks before REVIEW.
-5. Do not self-approve. Reviewer/verifier/QA must be separate.
+3. Make the requested scoped file changes.
+4. Report changed files and a short implementation note.
 6. Do not edit `Q:` or NAS runtime source.
 
 ## Claim
@@ -47,34 +46,19 @@ git worktree add .teamworktrees\coder<N> -b feat/coder<N>-T<id>-<slug> main
 - If scope is unclear, post BLOCKED.
 - If shared file is needed, post SHARED-FILE and stop.
 
-## Before Review
+## Completion Note
 
-Run:
-
-```powershell
-rg -n "(api[_-]?key|secret|password|token|jwt|credential|sk-|xai-|github_pat|ghp_)" .
-git diff --check
-{{TEST_COMMAND}}
-```
-
-Add any project checks from the task acceptance.
-
-## Review Note
-
-Move task ASSIGNED -> REVIEW and add:
+Keep the task in ASSIGNED and add:
 
 ```text
-**REVIEW - T-<id>** by coder<N> @ <ISO timestamp>
+**COMPLETE - T-<id>** by coder<N> @ <ISO timestamp>
 Branch: <branch>
 Changed: <short summary>
-Evidence:
-- `<command>`: PASS/FAIL
 Context:
 - Memory: <PROJECT_GOAL/TASKS/plans/docs used>
 - Files/logs: <files/logs/tests inspected>
 - Skills: <tools/skills used>
-Risk: low|medium|high
-Needs: reviewer|security|verifier|qa
+Ready: manager-closeout
 ```
 
 ## Blocked
@@ -85,29 +69,3 @@ Reason: <one line>
 Needs: <what unblocks this>
 ```
 
-## QA Role
-
-QA is read-only except logs under `tests/qa_logs/`.
-
-QA verifies REVIEW tasks:
-
-```powershell
-{{TEST_COMMAND}}
-docker compose config
-```
-
-If app is runnable, add smoke check:
-
-```powershell
-Invoke-RestMethod http://localhost:{{PORT_EXTERNAL}}{{HEALTH_ENDPOINT}}
-```
-
-QA note:
-
-```text
-**QA - T-<id>** by qa @ <ISO timestamp>
-Result: PASS|FAIL|INCOMPLETE
-Evidence:
-- `<command>`: <result>
-Notes: <findings>
-```

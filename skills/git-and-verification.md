@@ -34,6 +34,8 @@ Default: run `npm run check` for code changes. Docs-only edits may use targeted
 `rg` / `git diff --check` / `npm run spellcheck` when no TypeScript behavior changed.
 Run `npm run test:e2e` when the webview was touched.
 
+Known lint warning debt (incremental cleanup tracked separately): [`docs/plans/lint-warning-debt.md`](../docs/plans/lint-warning-debt.md).
+
 ## Workflow authority
 
 - Repo docs are canonical execution authority.

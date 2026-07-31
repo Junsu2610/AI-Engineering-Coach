@@ -227,9 +227,11 @@ Pass rate target: 6/6 after Phase 2–4 (manual dry-run against artifacts).
 | Skill count | 2 | 6 |
 | Eval pass rate (F1–F3, R1–R3) | ~2–3/6 | 6/6 (artifact dry-run) |
 | Chat prompt strategy | Full tool dump | Domain routing + compact catalog |
+| Eval scenario sheets | Inline table only | [eval-scenarios/](./eval-scenarios/) (F1–F3, R1–R3 checklists) |
+| Harness guard script | — | `npm run check:harness` (`scripts/check-agents-budget.mjs`) |
 
 ## Approval / archival
 
 This document is the execution plan. After approval, implement via the PR slices above. Do not spawn tracker issues from this plan unless asked. Update [agent-readiness-roadmap.md](./agent-readiness-roadmap.md) when the slim core lands so startup-context guidance stays consistent.
 
-**Status (2026-07-31):** Phases 0–5 implemented on branch `docs/progressive-disclosure-impl` (slim core, four new skills, chat progressive heuristics + unit tests). Phase 6 hill-climb recorded in the eval sheet above; revisit if agents miss skill discovery in real sessions.
+**Status (2026-07-31):** Phases 0–5 implemented (slim core, four new skills, chat progressive heuristics + unit tests). Phase 6 hill-climb complete: eval scenario checklists under [eval-scenarios/](./eval-scenarios/), automated `check:harness` guard for AGENTS line budget and skill pointer sync. Re-run F1–R3 after always-on context or chat routing changes; see [harness-and-workflow-optimization.md](./harness-and-workflow-optimization.md) for the broader harness adoption plan.

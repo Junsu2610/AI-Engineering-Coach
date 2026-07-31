@@ -1,87 +1,78 @@
-# Ownership - File Map
+# Ownership — File Map
 
 Every writable file must have exactly one owner. If ownership is unclear, Manager
 assigns before work starts.
 
-## Coder 1 - <!-- TODO: domain -->
+## Coder 1 — agent instructions and chat harness
 
 ```text
-# Example:
-# app/storage.py
-# app/main.py
-# tests/test_storage.py
-# tests/test_main.py
+skills/
+.claude/skills/
+.github/instructions/
+src/chat/
+src/chat/*.test.ts
 ```
 
-## Coder 2 - <!-- TODO: domain -->
+## Coder 2 — agent prompt workflows and plans
 
 ```text
-# Example:
-# app/analyze.py
-# app/utils.py
-# tests/test_analyze.py
-# tests/test_utils.py
+docs/agent-prompts/
+docs/plans/
 ```
 
-## Coder 3 - <!-- TODO: domain -->
+## Coder 3 — core analysis, webview, and MCP
 
 ```text
-# Example:
-# app/web/
-# app/templates/
-# tests/test_web.py
+src/core/
+src/webview/
+src/mcp/
+tests/e2e/
 ```
 
 ## QA
 
 - Read-only across repo.
-- May write logs under `tests/qa_logs/`.
+- May write logs under `test-results/` or task evidence notes in `TASKS.md`.
 - Does not edit source.
 
-## Specialist Roles
+## Specialist roles
 
-These are read-only by default:
-
-- architect
-- reviewer
-- security
-- verifier
+Read-only by default: architect, reviewer, security, verifier.
 
 They may write a short note to `TASKS.md` only when acting as the active agent
 and the task explicitly asks for their report.
 
-## Manager-Owned
+## Manager-owned
 
 ```text
-docker-compose.yml
-Dockerfile
-entrypoint.sh
-requirements.txt
 package.json
+package-lock.json
+esbuild.mjs
 README.md
-QUICKSTART.md
-ARCHITECTURE.md
+CONTRIBUTING.md
+CHANGELOG.md
 WORKFLOW.md
 AGENTS.md
-PROJECT_STATUS.md
+PROJECT_GOAL.md
 .gitignore
-.env.example
 .github/
 .claude/
 teamagent/
-docs/
-ops-remote-nas.md
+docs/content/
+docs/AUTHORING_RULES.md
+docs/hugo.toml
+scripts/
 VERSION
 ```
 
-## Conflict Resolution
+## Conflict resolution
 
 1. Same file needed by multiple coders: Manager splits or sequences work.
 2. Shared file needed: coder posts SHARED-FILE and stops.
 3. Temporary access must name file, line range, reason, and expiration.
 4. Dirty worktree/branch is preserved until Manager inspects it.
 
-## Pre-Commit Checklist
+## Pre-commit checklist
 
 - [ ] Changed files match ownership.
 - [ ] No Manager-owned file edited without approval.

@@ -14,6 +14,10 @@ file with YAML front matter that names it and describes when an AI agent should 
 | [git-and-verification](git-and-verification.md) | Branch, commit, PR, and verification commands |
 | [agent-prompt-workflows](agent-prompt-workflows.md) | Index into `docs/agent-prompts/*` workflows |
 
+## GitHub Agentic Workflows (gh-aw)
+
+The repo also ships [`.github/skills/agentic-workflows/`](../.github/skills/agentic-workflows/) for **GitHub Agentic Workflows (gh-aw)** — workflow create/debug/upgrade. That skill is separate from the six repo skills above; do not confuse them with `skills/*.md`.
+
 ## Layout
 
 Skills live here as the canonical source. Pointer files in harness-specific directories make them

@@ -25,6 +25,10 @@ plan archival only:
 The user will call `$team-task` manually when they want the accepted plan
 converted into team tasks.
 
+GitHub may hold complex brainstorming, roadmap, phase, or issue-planning
+context, but execution still starts only from repo truth and explicit
+`$team-task` or direct implementation requests.
+
 ## Roadmap Boundary
 
 `PROJECT_GOAL.md` is context, not an execution queue. Use it to understand the
@@ -32,8 +36,10 @@ project goal, scope, milestones, deploy target, and next focus. Do not convert
 `Next Focus` directly into code tasks.
 
 Loose ideas, bugs, and observations go through the MN inbox. Accepted plans are
-archived under `docs/plans/`. Only `teamagent/TASKS.md` is the coding-agent
-execution board.
+archived under `docs/plans/`. `PROJECT_GOAL.md` is the repo-local scope/progress
+mirror. Only `teamagent/TASKS.md` is the coding-agent execution board. Notion
+is display-only and GitHub is the optional planning/tracking layer for complex
+work.
 
 ## Agent Harness Model
 
@@ -47,7 +53,7 @@ Agent = Reasoning + Memory + Context + Skills + Orchestration
 - Memory: read `PROJECT_GOAL.md`, `AGENTS.md`, `TASKS.md`, plans, inbox, and relevant docs as needed.
 - Context: identify the exact files, logs, standards, and evidence each worker must load.
 - Skills: name the allowed tools, skills, deploy/check/fix flows, or subagents.
-- Orchestration: choose parallel vs sequential execution, dependencies, QA gates, and duplicate-agent prevention.
+- Orchestration: choose parallel vs sequential execution, dependencies, and duplicate-agent prevention.
 
 If Memory, Context, Skills, or Orchestration are unclear, keep the work in
 BACKLOG or BLOCKED instead of dispatching.
@@ -66,17 +72,17 @@ BACKLOG or BLOCKED instead of dispatching.
 Every task must be small enough for one writer and include:
 
 ```text
-### T-<id> - <title> [coder<N>|architect|reviewer|security|verifier|qa]
+### T-<id> - <title> [coder<N>|coder-mini|architect|reviewer|security|verifier]
 
 **Scope:** <files/dirs allowed>
 **Goal:** <outcome>
 **Context:** <files/logs/docs to read first>
 **Memory:** <PROJECT_GOAL/TASKS/plans/inbox/docs references>
 **Skills:** <allowed tools/skills/subagents>
-**Orchestration:** <parallel/sequential/dependencies/QA gate>
+**Orchestration:** <parallel/sequential/dependencies/Manager closeout>
 **Contract:** <inputs/outputs/interfaces>
-**Acceptance:** <fresh checks required>
-**Verification:** quick | standard | strict
+**Model:** gpt-5.6-luna | gpt-5.6-terra | gpt-5.6-sol (optional)
+**Reasoning Effort:** low | medium | high | xhigh (optional)
 **Risk:** low | medium | high
 ```
 
@@ -84,9 +90,18 @@ Rules:
 
 - Split cross-ownership work before assignment.
 - Use specialist roles before coding when requirements, architecture, or risk are unclear.
-- Use `strict` verification for auth, payments, deploy, data migration, deletion, secrets, Docker/NAS, or shared APIs.
 - One active writing task per coder.
+- Use `coder-mini` only for light, low-risk docs, tests, small config, simple single-file fixes, or isolated low-risk code changes.
+- Do not use `coder-mini` for auth, secrets, deploy, Docker/NAS, migrations, deletion, shared APIs, broad frontend changes, or medium/high-risk tasks.
 - Edit `TASKS.md` only when the user explicitly asks for team tasks, task-board changes, `$team-task`, or assignment to agents/workers.
+
+## Codex Model Routing
+
+Team Agent dispatches Codex workers only. Prefer `gpt-5.6-luna` for light
+low-risk work, `gpt-5.6-terra` for normal coding, and `gpt-5.6-sol` only for
+architecture, security, concurrency, or unclear root-cause work. Record the
+requested and actual GPT-5.6 selection in the handoff. If Codex cannot provide
+the required model, block the task instead of falling back to GPT-5.4 or older.
 
 ## Assign
 
@@ -109,25 +124,20 @@ When the user calls `team-auto`, Manager runs the coordination loop in one chat:
    - `git worktree list --porcelain`
    - `git for-each-ref refs/heads refs/remotes --format="%(refname:short) %(objectname:short) %(upstream:short) %(worktreepath)"`
    - optional when available: `gh pr list --state open`
-3. Map branch/worktree names back to task IDs when they contain patterns such as `T-082`, `T082`, `coder3-T082`, `qa-T092`, or task title slugs.
+3. Map branch/worktree names back to task IDs when they contain patterns such as `T-082`, `T082`, `coder3-T082`, or task title slugs.
 4. Treat unresolved matching branches/worktrees as active work even if `TASKS.md` is stale. Do not spawn a duplicate agent for that task or slot.
 5. If the current worktree is dirty, compare changed paths with candidate task scopes and do not spawn overlapping writers until the dirty changes are understood.
 6. Spawn only runnable coder tasks: dependencies done, slot free, clear scope, no overlapping write set, and no unresolved blocker.
-7. Keep coder-completed tasks in `REVIEW`; do not self-approve from coder output alone.
-8. Spawn QA or verifier for `standard` or `strict` verification, broad frontend changes, shared API changes, auth, secrets, deploy, Docker/NAS, deletion, migrations, or any medium/high risk task.
-9. Manager reviews fresh evidence and decides merge/DONE or sends work back to `ASSIGNED`.
+   - Prefer `gpt-5.6-luna` for `coder-mini` and `gpt-5.6-terra` for regular coders.
+   - Keep `coder-mini` to light, low-risk work only.
+7. Require coder-completed tasks to report changed files and a short implementation note.
+8. Move delivered scoped edits directly to DONE. Return to ASSIGNED only for a blocker or plainly incomplete implementation.
+9. Do not run review, verification, security, test, or build gates unless the user explicitly requests them.
 10. Stop when there is no runnable work, a task is blocked, tooling is unavailable, or the user interrupts.
 
-## Review Gate
+## Manager Closeout
 
-For each REVIEW task:
-
-1. Inspect diff: `git diff main..branch`.
-2. Check scope against `OWNERSHIP.md`.
-3. Require reviewer pass for non-trivial code.
-4. Require security pass for sensitive code.
-5. Require verifier/QA evidence for acceptance checks.
-6. Reject if evidence is stale, missing, or self-approved.
+For each coder completion report, record changed files and move the task to DONE.
 
 Reject format:
 
@@ -142,7 +152,7 @@ Action: <what must change>
 1. Ensure clean checks.
 2. Merge only into `main`.
 3. Delete finished feature branch/worktree when safe.
-4. Move task REVIEW -> DONE.
+4. Move task ASSIGNED -> DONE.
 5. Update `HISTORY.md` at sprint end.
 
 ## Deploy
@@ -161,5 +171,4 @@ Trivial typo or one-line docs-only fixes may be done directly by Manager if:
 
 - no behavior change,
 - no ownership conflict,
-- secret scan passes,
 - DONE entry records the change.
