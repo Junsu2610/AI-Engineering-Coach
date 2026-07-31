@@ -26,3 +26,6 @@ test-results/
 .teamworktrees/
 
 teamagent/state/STATUS.json
+
+# Private coach summary exports (local-only)
+summary/
