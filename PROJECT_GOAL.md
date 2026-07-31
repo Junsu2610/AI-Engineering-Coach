@@ -57,10 +57,10 @@ Pending:
 
 ## Next Focus
 
-1. Keep agent workflow guardrails aligned with the workspace Manager rules.
+1. Keep the slim `AGENTS.md` + `skills/` progressive-disclosure path aligned as procedures change.
 2. Reduce warning debt only through focused, testable tasks.
 3. Run `npm run check` before claiming behavior changes complete.
 
 ## Last Updated
 
-2026-07-05
+2026-07-31

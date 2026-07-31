@@ -6,11 +6,11 @@ Single source of truth for assignments. Keep entries short and evidence-based.
 
 | Slot | Role | Status | Current task |
 |---|---|---|---|
-| manager | coordination | done | T-006-verify-codex-workflow-optimization |
-| coder1 | agent instructions | done | T-004-refresh-agent-instructions |
+| manager | coordination | done | T-007-progressive-disclosure-slim-core |
+| coder1 | agent instructions | done | T-007-progressive-disclosure-slim-core |
 | coder2 | agent prompt workflows | done | T-005-add-context-workflow-and-lint-plan |
 | coder3 | <!-- TODO: domain --> | idle | - |
-| qa | verification | done | T-006-verify-codex-workflow-optimization |
+| qa | verification | idle | - |
 | architect | analysis | idle | - |
 | reviewer | code review | idle | - |
 | security | security review | idle | - |
@@ -46,6 +46,27 @@ _(empty)_
 ---
 
 ## DONE (recent - archive in HISTORY.md)
+
+### T-007-progressive-disclosure-slim-core - Slim always-on context via progressive disclosure [coder1]
+
+**Scope:** `AGENTS.md`, `.github/copilot-instructions.md`, `skills/*`, `.claude/skills/*`, `.github/instructions/*`, `src/chat/system-prompt.ts`, `src/chat/system-prompt.test.ts`, `docs/plans/system-prompt-progressive-disclosure.md`, `docs/plans/agent-readiness-roadmap.md`
+**Goal:** Execute approved progressive-disclosure plan: measure, classify, slim always-on core, extract skills, progressive chat tool heuristics.
+**Context:** `docs/plans/system-prompt-progressive-disclosure.md`
+**Memory:** Plan archived via origin PR #2; branch `docs/progressive-disclosure-impl`
+**Skills:** `update-docs` (plan/roadmap), `git-and-verification`, `author-rule-or-metric` (skill body)
+**Orchestration:** Manager-local implementation (Phases 0–5) on feature branch from `origin/main`.
+**Contract:** `AGENTS.md` ≤40 lines identity/constraints; 4 new skills + pointers; chat routing without full tool dump; privacy/worker boundaries greppable; unit tests for prompt helpers.
+**Acceptance:** PASS - AGENTS 34 lines; skills 6; eval sheet 6/6 dry-run; `system-prompt` tests added.
+**Model:** gpt-5.6-terra
+**Reasoning Effort:** medium
+**TDD:** unit tests for `buildToolHeuristics` / catalog helpers.
+**Verification:** `npx vitest run src/chat/system-prompt.test.ts`; `npm run check`
+**Risk:** medium (agents may under-read skills — mitigated by always-on skill index)
+
+**DONE - T-007-progressive-disclosure-slim-core** by coder1 @ 2026-07-31T00:00:00Z
+Branch: `docs/progressive-disclosure-impl`
+Changed: slim `AGENTS.md`, Copilot stub, four new skills + harness pointers, chat progressive heuristics + tests, plan Phase 0/1/results, roadmap next-updates.
+
 
 ### T-004-refresh-agent-instructions - Refresh stable agent instructions [coder1]
 
