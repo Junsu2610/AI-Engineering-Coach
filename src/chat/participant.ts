@@ -100,7 +100,7 @@ async function runAgenticLoop(
   response: vscode.ChatResponseStream,
   token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
-  const systemPrompt = buildSystemPrompt(TOOL_DEFS);
+  const systemPrompt = buildSystemPrompt();
   const userPrompt = resolveUserPrompt(request);
   const historyMessages = buildHistoryMessages(chatContext.history);
 

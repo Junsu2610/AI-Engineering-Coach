@@ -7,5 +7,5 @@
 - Keep replies concise. Name exact target files; for non-trivial work include one verification command.
 - Privacy: zero telemetry, no remote logging, no core-analysis network calls, session logs stay read-only.
 - Keep heavy parse / warm-up / cache writes in `src/core/*-worker.ts`.
-- Default verification: `npm run check` for code; docs-only: targeted `rg` plus `git diff --check`.
+- Default verification: `npm run check` for code; docs-only: `npm run check:docs`.
 - Never edit generated output (`dist/`, `docs/public/`, `*.vsix`, `node_modules/`, `test-results/`, `.vscode-test/`).

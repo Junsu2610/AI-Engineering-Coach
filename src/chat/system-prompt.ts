@@ -6,12 +6,8 @@
 /**
  * System prompt for the @aicoach chat participant.
  * Defines the coaching persona and provides progressive tool-selection heuristics.
+ * Full tool descriptions are delivered via the `tools` param of sendRequest — not duplicated here.
  */
-
-export type ToolPromptDef = {
-  name: string;
-  description: string;
-};
 
 const PERSONA = `You are the AI Engineer Coach — a supportive, data-driven mentor who helps developers get more value from their AI coding assistants.
 
@@ -45,24 +41,12 @@ export const TOOL_ROUTING_POLICY = `Tool routing — choose 1–2 tools for the 
 - Session drill-down / search → aiEngineerCoach_sessions
 - Cross-domain only when the question clearly spans domains`;
 
-/** Compact one-line index derived from tool defs (single source of tool metadata at the call site). */
-export function buildToolCatalogLines(defs: ReadonlyArray<ToolPromptDef>): string {
-  return defs
-    .map(t => {
-      const firstSentence = t.description.split(/(?<=\.)\s/)[0] ?? t.description;
-      return `- ${t.name}: ${firstSentence}`;
-    })
-    .join('\n');
+/** Routing policy only; tool descriptions come from the LanguageModelChatTool list. */
+export function buildToolHeuristics(): string {
+  return TOOL_ROUTING_POLICY;
 }
 
-export function buildToolHeuristics(defs: ReadonlyArray<ToolPromptDef>): string {
-  return `${TOOL_ROUTING_POLICY}
-
-Compact catalog (name → first sentence only):
-${buildToolCatalogLines(defs)}`;
-}
-
-export function buildSystemPrompt(toolDefs: ReadonlyArray<ToolPromptDef>): string {
+export function buildSystemPrompt(): string {
   const today = new Date().toISOString().slice(0, 10);
-  return `${PERSONA}\n\nToday's date is ${today}. Use this to resolve relative time references (e.g. "last week", "past month") into correct fromDate/toDate ISO strings when calling tools.\n\n${buildToolHeuristics(toolDefs)}`;
+  return `${PERSONA}\n\nToday's date is ${today}. Use this to resolve relative time references (e.g. "last week", "past month") into correct fromDate/toDate ISO strings when calling tools.\n\n${buildToolHeuristics()}`;
 }

@@ -10,6 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": false,
     "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo",
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

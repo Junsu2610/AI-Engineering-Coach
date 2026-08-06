@@ -16,7 +16,7 @@ Humans start at [`README.md`](README.md). Load only the skill and files needed f
 - **No telemetry**, remote logging, or network calls in core analysis paths.
 - **Never modify** user session log files (read-only).
 - Keep parse, warm-up, and cache writes in existing `src/core/*-worker.ts` workers.
-- Run `npm run check` before claiming code changes complete; docs-only work may use targeted checks.
+- Run `npm run check` before claiming code changes complete; docs-only: `npm run check:docs`.
 - Ask first before: new runtime deps, host/worker network calls, rule-trust or DSL changes, public command/config/ID renames, or `engines.vscode` / Node bumps.
 - Never commit secrets or edit generated artifacts (`dist/`, `docs/public/`, `*.vsix`, `node_modules/`, `test-results/`, `.vscode-test/`).
 

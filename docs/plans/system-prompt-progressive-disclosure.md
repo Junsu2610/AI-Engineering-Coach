@@ -216,22 +216,49 @@ No new orchestration framework in this phase.
 | R3 Chat tools | Fail: full TOOL_DEFS dump every turn | Pass: routing policy + first-sentence catalog |
 
 Pass rate target: 6/6 after Phase 2–4 (manual dry-run against artifacts).
+**Re-scored 2026-08-04 on `origin/main`:** 6/6 PASS — see [eval-scenarios/](./eval-scenarios/) Notes tables.
 
 ## Results (fill during execution)
 
 | Metric | Before | After |
 |---|---|---|
-| `AGENTS.md` lines | 168 | 34 |
-| `AGENTS.md` bytes | 10837 | 2723 |
-| Copilot instructions lines | 9 | 9 |
+| `AGENTS.md` lines | 168 | 39 (budget ≤40; `check:harness`) |
+| `AGENTS.md` bytes | 10837 | 2523 |
+| Copilot instructions lines | 9 | 11 |
 | Skill count | 2 | 6 |
-| Eval pass rate (F1–F3, R1–R3) | ~2–3/6 | 6/6 (artifact dry-run) |
-| Chat prompt strategy | Full tool dump | Domain routing + compact catalog |
-| Eval scenario sheets | Inline table only | [eval-scenarios/](./eval-scenarios/) (F1–F3, R1–R3 checklists) |
+| Eval pass rate (F1–F3, R1–R3) | ~2–3/6 | 6/6 (artifact dry-run 2026-08-04) |
+| Chat prompt strategy | Full tool dump + numbered Strategy | Routing policy only; tool descriptions via `tools` param (catalog removed 2026-08-07) |
+| Eval scenario sheets | Inline table only | [eval-scenarios/](./eval-scenarios/) (F1–F3, R1–R3 checklists scored) |
 | Harness guard script | — | `npm run check:harness` (`scripts/check-agents-budget.mjs`) |
+
+### Phase 4 re-verify (2026-08-07)
+
+| Check | Evidence |
+|---|---|
+| Routing policy always-on | `TOOL_ROUTING_POLICY` in `src/chat/system-prompt.ts`; `buildToolHeuristics` returns policy only |
+| Tool descriptions | Delivered via `tools` param of `sendRequest` (`getChatTools()` in `participant.ts`); no Compact catalog in system prompt |
+| R3 mapping | Improve / fix → `aiEngineerCoach_patterns` |
+| Persona safety | "untrusted data" still in `PERSONA` |
+| Unit tests | `src/chat/system-prompt.test.ts` — routing policy, persona safety, no full descriptions, heuristics size ≤1200 |
+| TS change this run | Catalog dedupe + harness speedups; `npm run check` required |
+
+Eval scenario Notes tables filled under [eval-scenarios/](./eval-scenarios/) (same date).
+
+### Phase 4 re-verify (2026-08-04, `origin/main`) — superseded
+
+| Check | Evidence |
+|---|---|
+| Routing policy always-on | `TOOL_ROUTING_POLICY` in `src/chat/system-prompt.ts`; leads `buildToolHeuristics` |
+| Compact catalog | (removed 2026-08-07 — was `buildToolCatalogLines` first-sentence index) |
+| R3 mapping | Improve / fix → `aiEngineerCoach_patterns` |
+| Persona safety | "untrusted data" still in `PERSONA` |
+| Unit tests | `npx vitest run src/chat/system-prompt.test.ts` → 3 passed |
+| TS change this run | None — full `npm run check` not required; `npm run check:harness` green |
+
+Eval scenario Notes tables filled under [eval-scenarios/](./eval-scenarios/) (same date).
 
 ## Approval / archival
 
 This document is the execution plan. After approval, implement via the PR slices above. Do not spawn tracker issues from this plan unless asked. Update [agent-readiness-roadmap.md](./agent-readiness-roadmap.md) when the slim core lands so startup-context guidance stays consistent.
 
-**Status (2026-07-31):** Phases 0–5 implemented (slim core, four new skills, chat progressive heuristics + unit tests). Phase 6 hill-climb complete: eval scenario checklists under [eval-scenarios/](./eval-scenarios/), automated `check:harness` guard for AGENTS line budget and skill pointer sync. Re-run F1–R3 after always-on context or chat routing changes; see [harness-and-workflow-optimization.md](./harness-and-workflow-optimization.md) for the broader harness adoption plan.
+**Status (2026-08-07):** Phases 0–5 remain implemented; chat prompt further slimmed to routing policy only (tool descriptions via Language Model `tools` param). Phase 6 hill-climb re-scored: eval scenario checklists under [eval-scenarios/](./eval-scenarios/) marked PASS; R3 re-verified after catalog removal. `check:harness` now also greps privacy boundaries and syncs AGENTS skill links. Re-run F1–R3 after always-on context or chat routing changes; see [harness-and-workflow-optimization.md](./harness-and-workflow-optimization.md) for the broader harness adoption plan.

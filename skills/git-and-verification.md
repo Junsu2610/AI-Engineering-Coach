@@ -30,8 +30,8 @@ when_to_use: Creating branches, committing, opening PRs, or choosing which check
 | VSIX | `npm run package` (see [`package-extension`](package-extension.md)) |
 | Bundle size | `npm run check-size` |
 
-Default: run `npm run check` for code changes. Docs-only edits may use targeted
-`rg` / `git diff --check` / `npm run spellcheck` when no TypeScript behavior changed.
+Default: run `npm run check` for code changes. Docs-only edits: `npm run check:docs`
+(spellcheck + harness) when no TypeScript behavior changed.
 Run `npm run test:e2e` when the webview was touched.
 
 Known lint warning debt (incremental cleanup tracked separately): [`docs/plans/lint-warning-debt.md`](../docs/plans/lint-warning-debt.md).

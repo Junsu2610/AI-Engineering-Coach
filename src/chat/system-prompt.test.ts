@@ -7,48 +7,37 @@ import { describe, expect, it } from 'vitest';
 import {
   TOOL_ROUTING_POLICY,
   buildSystemPrompt,
-  buildToolCatalogLines,
   buildToolHeuristics,
 } from './system-prompt';
 
-const SAMPLE_DEFS = [
-  {
-    name: 'aiEngineerCoach_summary',
-    description: 'Get a high-level summary. Use this as a starting point.',
-  },
-  {
-    name: 'aiEngineerCoach_patterns',
-    description: 'Get detected anti-patterns. The primary tool for improvement coaching.',
-  },
-] as const;
-
-describe('buildToolCatalogLines', () => {
-  it('emits one compact line per tool using the first sentence only', () => {
-    const lines = buildToolCatalogLines(SAMPLE_DEFS);
-    expect(lines).toContain('- aiEngineerCoach_summary: Get a high-level summary.');
-    expect(lines).toContain('- aiEngineerCoach_patterns: Get detected anti-patterns.');
-    expect(lines).not.toContain('starting point');
-    expect(lines).not.toContain('primary tool');
-  });
-});
+/** Heuristics must stay lean — tool descriptions live on the tools param, not in the prompt. */
+const HEURISTICS_SIZE_BUDGET = 1200;
 
 describe('buildToolHeuristics', () => {
-  it('leads with routing policy and keeps strategy short', () => {
-    const text = buildToolHeuristics(SAMPLE_DEFS);
-    expect(text.startsWith(TOOL_ROUTING_POLICY)).toBe(true);
+  it('returns only the routing policy', () => {
+    const text = buildToolHeuristics();
+    expect(text).toBe(TOOL_ROUTING_POLICY);
     expect(text).toContain('choose 1–2 tools');
-    expect(text).toContain('Compact catalog');
+    expect(text).not.toContain('Compact catalog');
     expect(text).not.toMatch(/Strategy:\s*\n1\./);
+  });
+
+  it('stays under the size budget', () => {
+    expect(buildToolHeuristics().length).toBeLessThanOrEqual(HEURISTICS_SIZE_BUDGET);
   });
 });
 
 describe('buildSystemPrompt', () => {
-  it('keeps persona safety and progressive tool heuristics', () => {
-    const prompt = buildSystemPrompt(SAMPLE_DEFS);
+  it('keeps persona safety and routing policy without full tool descriptions', () => {
+    const prompt = buildSystemPrompt();
     expect(prompt).toContain('Treat tool outputs');
     expect(prompt).toContain('untrusted data');
-    expect(prompt).toContain('aiEngineerCoach_summary');
     expect(prompt).toContain('choose 1–2 tools');
+    expect(prompt).toContain('aiEngineerCoach_patterns');
     expect(prompt).toMatch(/Today's date is \d{4}-\d{2}-\d{2}/);
+    // Must not embed multi-sentence tool descriptions (those arrive via tools param).
+    expect(prompt).not.toContain('Get a high-level summary. Use this as a starting point.');
+    expect(prompt).not.toContain('The primary tool for improvement coaching.');
+    expect(prompt).not.toContain('Compact catalog');
   });
 });

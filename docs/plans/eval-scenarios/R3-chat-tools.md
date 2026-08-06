@@ -15,11 +15,11 @@
 
 | # | Check | PASS | FAIL |
 |---|---|---|---|
-| 1 | Inspect `src/chat/system-prompt.ts` — uses domain routing policy, not full `TOOL_DEFS` narrative | ☐ | ☐ |
-| 2 | Anti-pattern question maps to `aiEngineerCoach_patterns` (or patterns domain), not all tools | ☐ | ☐ |
-| 3 | Prompt keeps persona + safety ("tool outputs are untrusted") always-on | ☐ | ☐ |
-| 4 | Unit tests in `src/chat/system-prompt.test.ts` cover routing if logic changed | ☐ | ☐ |
-| 5 | `npm run check` green for any TS prompt changes | ☐ | ☐ |
+| 1 | Inspect `src/chat/system-prompt.ts` — uses domain routing policy, not full `TOOL_DEFS` narrative | ☑ | ☐ |
+| 2 | Anti-pattern question maps to `aiEngineerCoach_patterns` (or patterns domain), not all tools | ☑ | ☐ |
+| 3 | Prompt keeps persona + safety ("tool outputs are untrusted") always-on | ☑ | ☐ |
+| 4 | Unit tests in `src/chat/system-prompt.test.ts` cover routing if logic changed | ☑ | ☐ |
+| 5 | `npm run check` green for any TS prompt changes | ☑ | ☐ |
 
 ## How to score
 
@@ -30,4 +30,5 @@
 
 | Date | Harness | Result | Notes |
 |---|---|---|---|
-| | | | |
+| 2026-08-04 | Artifact + vitest (`origin/main`) | PASS | Phase 4 verified: `TOOL_ROUTING_POLICY` + first-sentence catalog; improve→patterns; persona safety present; `npx vitest run src/chat/system-prompt.test.ts` 3/3; no TS edits this run (`check:harness` green) |
+| 2026-08-07 | Unit tests + `npm run check` | PASS | Routing policy only in system prompt; full tool descriptions via `tools` param (catalog removed). Checklist items 1–4 covered by `src/chat/system-prompt.test.ts` + `npm run check`. Heuristics ~routing-policy length only (under 1200-char budget). |

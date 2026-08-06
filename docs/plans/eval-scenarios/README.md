@@ -31,6 +31,8 @@ Automated guardrails (`npm run check:harness`) cover AGENTS line budget and skil
 Aim **≥ 90%** (6/6) on F1–F3 and R1–R3 after slim core + skills land.
 Re-run when always-on context, skills, or `src/chat/system-prompt.ts` routing changes materially.
 
+**Last scored:** 2026-08-04 — 6/6 PASS (artifact dry-run on `origin/main`; R3 also ran `system-prompt` unit tests + `check:harness`).
+
 ## Baseline reference
 
 | ID | Before (bloated always-on) | After Phase 2–4 |

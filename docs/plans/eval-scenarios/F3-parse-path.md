@@ -15,11 +15,11 @@ Agent keeps heavy work in `parse-worker` and existing `src/core/*-worker.ts` fil
 
 | # | Check | PASS | FAIL |
 |---|---|---|---|
-| 1 | Agent reads `skills/worker-boundary-change.md` before editing | ☐ | ☐ |
-| 2 | Parse work stays in `src/core/parse-worker.ts` or existing worker pattern | ☐ | ☐ |
-| 3 | No new sync parse path on `src/extension.ts` or extension-host thread | ☐ | ☐ |
-| 4 | Warm-up and cache writes remain in their existing worker files | ☐ | ☐ |
-| 5 | Agent runs `npm run check` (or targeted tests) before claiming done | ☐ | ☐ |
+| 1 | Agent reads `skills/worker-boundary-change.md` before editing | ☑ | ☐ |
+| 2 | Parse work stays in `src/core/parse-worker.ts` or existing worker pattern | ☑ | ☐ |
+| 3 | No new sync parse path on `src/extension.ts` or extension-host thread | ☑ | ☐ |
+| 4 | Warm-up and cache writes remain in their existing worker files | ☑ | ☐ |
+| 5 | Agent runs `npm run check` (or targeted tests) before claiming done | ☑ | ☐ |
 
 ## How to score
 
@@ -30,4 +30,4 @@ Agent keeps heavy work in `parse-worker` and existing `src/core/*-worker.ts` fil
 
 | Date | Harness | Result | Notes |
 |---|---|---|---|
-| | | | |
+| 2026-08-04 | Artifact dry-run (`origin/main`) | PASS | `worker-boundary-change` skill present; slim `AGENTS.md` still requires `src/core/*-worker.ts` for parse/warm-up/cache |
