@@ -31,3 +31,6 @@ teamagent/state/STATUS.json
 
 # Private coach summary exports (local-only)
 summary/
+
+# Local model and harness benchmark outputs
+benchmarks/results/

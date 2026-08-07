@@ -296,6 +296,7 @@
     "watch": "node esbuild.mjs --watch",
     "lint": "eslint src/ --cache",
     "bench": "vitest bench",
+    "benchmark:agents": "tsx src/benchmark/cli.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
@@ -351,6 +352,7 @@
     "npm-run-all2": "9.0.3",
     "preact-render-to-string": "6.7.0",
     "serve": "14.2.6",
+    "tsx": "4.23.11",
     "typescript": "6.0.3",
     "typescript-eslint": "8.64.0",
     "vitest": "4.1.10"

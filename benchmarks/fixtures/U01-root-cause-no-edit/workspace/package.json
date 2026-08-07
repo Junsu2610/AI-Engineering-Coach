@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-checkout-diagnosis",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/checkout-total.test.mjs"
+  }
+}

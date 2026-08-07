@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-date-window",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/date-window.test.mjs"
+  }
+}

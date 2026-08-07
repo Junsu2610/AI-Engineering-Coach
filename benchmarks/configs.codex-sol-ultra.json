@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "gpt-5.6-sol-codex-controlled-ultra",
+      "harness": "codex-cli",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "ultra",
+      "adapter": "codex-exec",
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Codex CLI with user config, rules, memories, apps, web search, and shell network disabled for the controlled pilot. No neutral model baseline is claimed."
+    }
+  ]
+}

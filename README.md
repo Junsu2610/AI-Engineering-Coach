@@ -187,6 +187,12 @@ A few features depend on the local VS Code language model and are hidden in canv
 
 ---
 
+## Model and harness benchmark
+
+The repository includes a 12-scenario benchmark contract plus executable hidden-verifier pilot fixtures for comparing model baselines, controlled harness uplift, and native end-to-end performance. The verifier is local; configured harness adapters perform the model calls. See [Model and Harness Benchmark](docs/agent-model-harness-benchmark.md) for the run protocol and scorecard commands.
+
+---
+
 ## Code of Conduct
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "gpt-5.6-neutral",
+      "harness": "neutral-runner",
+      "model": "gpt-5.6",
+      "mode": "controlled",
+      "role": "baseline",
+      "notes": "Minimal shared prompt and tool contract; memory and harness-specific skills disabled."
+    },
+    {
+      "id": "gpt-5.6-codex-controlled",
+      "harness": "codex",
+      "model": "gpt-5.6",
+      "mode": "controlled",
+      "role": "candidate",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-claude-controlled",
+      "harness": "claude",
+      "model": "gpt-5.6",
+      "mode": "controlled",
+      "role": "candidate",
+      "baselineConfigId": "gpt-5.6-neutral",
+      "notes": "Claude harness using GPT-5.6 as the configured model."
+    },
+    {
+      "id": "gpt-5.6-cursor-controlled",
+      "harness": "cursor",
+      "model": "gpt-5.6",
+      "mode": "controlled",
+      "role": "candidate",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-antigravity-controlled",
+      "harness": "antigravity",
+      "model": "gpt-5.6",
+      "mode": "controlled",
+      "role": "candidate",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-codex-native",
+      "harness": "codex",
+      "model": "gpt-5.6",
+      "mode": "native",
+      "role": "native",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-claude-native",
+      "harness": "claude",
+      "model": "gpt-5.6",
+      "mode": "native",
+      "role": "native",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-cursor-native",
+      "harness": "cursor",
+      "model": "gpt-5.6",
+      "mode": "native",
+      "role": "native",
+      "baselineConfigId": "gpt-5.6-neutral"
+    },
+    {
+      "id": "gpt-5.6-antigravity-native",
+      "harness": "antigravity",
+      "model": "gpt-5.6",
+      "mode": "native",
+      "role": "native",
+      "baselineConfigId": "gpt-5.6-neutral"
+    }
+  ]
+}

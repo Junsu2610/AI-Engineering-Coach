@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-dirty-worktree",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/validate-profile.test.mjs"
+  }
+}

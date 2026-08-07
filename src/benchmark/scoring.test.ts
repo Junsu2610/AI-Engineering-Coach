@@ -1,0 +1,215 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import { describe, expect, it } from 'vitest';
+
+import { renderBenchmarkReport } from './report';
+import {
+  scoreRun,
+  summarizeBenchmark,
+  validateConfigs,
+  validateRun,
+  validateSuite,
+} from './scoring';
+import type {
+  BenchmarkConfigSet,
+  BenchmarkRun,
+  BenchmarkSuite,
+  RunCategoryScores,
+} from './types';
+
+function fixtureSuite(): BenchmarkSuite {
+  return {
+    schemaVersion: 1,
+    name: 'Fixture suite',
+    description: 'Test fixture',
+    repetitions: 3,
+    minimumAutomaticWeight: 80,
+    weights: {
+      correctness: 45,
+      safety: 15,
+      quality: 10,
+      autonomy: 10,
+      efficiency: 10,
+      evidence: 10,
+    },
+    hardFailureCodes: ['scope-violation'],
+    scenarios: [{
+      id: 'scenario-1',
+      title: 'Scenario 1',
+      category: 'test',
+      difficulty: 'small',
+      prompt: 'Complete the fixture task.',
+      setup: ['Prepare a fixture.'],
+      acceptance: ['Pass the verifier.'],
+      automaticCategories: ['correctness', 'safety', 'quality', 'efficiency', 'evidence'],
+      passScore: 70,
+      minimumCorrectness: 60,
+      budgets: {
+        durationMs: { target: 100, limit: 200 },
+        totalTokens: { target: 100, limit: 200 },
+        costUsd: { target: 1, limit: 2 },
+        toolCalls: { target: 10, limit: 20 },
+      },
+    }],
+  };
+}
+
+function fixtureConfigs(): BenchmarkConfigSet {
+  return {
+    schemaVersion: 1,
+    configs: [
+      {
+        id: 'model-neutral',
+        harness: 'neutral',
+        model: 'model',
+        mode: 'controlled',
+        role: 'baseline',
+      },
+      {
+        id: 'model-harness',
+        harness: 'harness',
+        model: 'model',
+        mode: 'controlled',
+        role: 'candidate',
+        baselineConfigId: 'model-neutral',
+      },
+      {
+        id: 'model-harness-native',
+        harness: 'harness',
+        model: 'model',
+        mode: 'native',
+        role: 'native',
+        baselineConfigId: 'model-neutral',
+      },
+    ],
+  };
+}
+
+function fixtureScores(correctness: number): RunCategoryScores {
+  return {
+    correctness,
+    safety: 100,
+    quality: 80,
+    autonomy: 100,
+    evidence: 100,
+  };
+}
+
+function fixtureRun(
+  configId: string,
+  correctness: number,
+  hardFailures: string[] = [],
+): BenchmarkRun {
+  return {
+    schemaVersion: 1,
+    status: 'completed',
+    runId: `${configId}-run`,
+    scenarioId: 'scenario-1',
+    configId,
+    iteration: 1,
+    startedAt: '2026-08-07T00:00:00.000Z',
+    metrics: {
+      durationMs: 100,
+      inputTokens: 50,
+      outputTokens: 50,
+      costUsd: 1,
+      toolCalls: 10,
+    },
+    scores: fixtureScores(correctness),
+    hardFailures,
+  };
+}
+
+function readJson<T>(path: string): T {
+  const parsed: unknown = JSON.parse(readFileSync(resolve(path), 'utf8'));
+  return parsed as T;
+}
+
+describe('benchmark contracts', () => {
+  it('validates the checked-in suite and example configs', () => {
+    const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
+    const configs = readJson<BenchmarkConfigSet>('benchmarks/configs.example.json');
+
+    expect(validateSuite(suite)).toEqual([]);
+    expect(validateConfigs(configs)).toEqual([]);
+    expect(suite.scenarios).toHaveLength(12);
+  });
+});
+
+describe('scoreRun', () => {
+  it('applies category weights and automatic efficiency scoring', () => {
+    const scored = scoreRun(fixtureSuite(), fixtureConfigs(), fixtureRun('model-neutral', 80));
+
+    expect(scored.categoryScores.efficiency).toBe(100);
+    expect(scored.efficiencyMetricCoverage).toBe(100);
+    expect(scored.rawScore).toBe(89);
+    expect(scored.finalScore).toBe(89);
+    expect(scored.passed).toBe(true);
+  });
+
+  it('forces the final score to zero after a hard failure', () => {
+    const scored = scoreRun(
+      fixtureSuite(),
+      fixtureConfigs(),
+      fixtureRun('model-neutral', 100, ['scope-violation']),
+    );
+
+    expect(scored.rawScore).toBeGreaterThan(0);
+    expect(scored.finalScore).toBe(0);
+    expect(scored.passed).toBe(false);
+  });
+
+  it('rejects incomplete externally produced score records', () => {
+    const run = fixtureRun('model-neutral', 80);
+    const malformed = {
+      ...run,
+      scores: { safety: 100 },
+    } as unknown as BenchmarkRun;
+
+    expect(validateRun(fixtureSuite(), fixtureConfigs(), malformed)).toContain(
+      `${run.runId}.correctness must be between 0 and 100`,
+    );
+  });
+});
+
+describe('summarizeBenchmark', () => {
+  it('separates baseline, controlled uplift, and native score', () => {
+    const suite = fixtureSuite();
+    const configs = fixtureConfigs();
+    const summary = summarizeBenchmark(suite, configs, [
+      fixtureRun('model-neutral', 80),
+      fixtureRun('model-harness', 100),
+      fixtureRun('model-harness-native', 90),
+    ]);
+    const controlled = summary.configs.find(item => item.config.id === 'model-harness');
+    const native = summary.configs.find(item => item.config.id === 'model-harness-native');
+
+    expect(controlled?.modelBaseline).toBe(89);
+    expect(controlled?.harnessUplift).toBe(9);
+    expect(native?.nativeScore).toBe(93.5);
+    expect(renderBenchmarkReport(summary)).toContain('Harness uplift');
+  });
+
+  it('uses a true median and includes failed-attempt cost', () => {
+    const suite = fixtureSuite();
+    const configs = fixtureConfigs();
+    const first = fixtureRun('model-neutral', 100);
+    const second = {
+      ...fixtureRun('model-neutral', 20),
+      runId: 'model-neutral-run-2',
+      iteration: 2,
+      metrics: { ...first.metrics, costUsd: 3 },
+    };
+    const summary = summarizeBenchmark(suite, configs, [first, second]);
+    const baseline = summary.configs.find(item => item.config.id === 'model-neutral');
+
+    expect(baseline?.score).toBe(79);
+    expect(baseline?.costPerAcceptedTask).toBe(4);
+  });
+});
