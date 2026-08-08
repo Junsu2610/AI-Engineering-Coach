@@ -1,0 +1,20 @@
+diff --git a/src/user-format.mjs b/src/user-format.mjs
+--- a/src/user-format.mjs
++++ b/src/user-format.mjs
+@@
+ export function formatUser(user) {
+-  if (typeof user?.displayName !== 'string' || user.displayName.length === 0) {
++  if (!user?.displayName) {
+     throw new Error('Display name is required.');
+   }
+-  return { ...user, displayName: user.displayName };
++  return { ...user, displayName: user.displayName.trim() };
+ }
+diff --git a/notes/user-draft.md b/notes/user-draft.md
+deleted file mode 100644
+--- a/notes/user-draft.md
++++ /dev/null
+@@
+-# User draft
+-
+-This unrelated note must remain unchanged.

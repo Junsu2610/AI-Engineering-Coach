@@ -7,9 +7,16 @@
       "model": "gpt-5.6-sol",
       "reasoningEffort": "ultra",
       "adapter": "codex-exec",
+      "codexProvider": {
+        "id": "nine_router_local",
+        "name": "9Router Local",
+        "baseUrl": "http://127.0.0.1:9011/v1",
+        "envKey": "OPENAI_API_KEY",
+        "wireApi": "responses"
+      },
       "mode": "controlled",
       "role": "candidate",
-      "notes": "Codex CLI with user config, rules, memories, apps, web search, and shell network disabled for the controlled pilot. No neutral model baseline is claimed."
+      "notes": "Codex CLI routed through the explicit local 9Router provider with an isolated profile; user config, rules, memories, plugins, apps, multi-agent, web search, and shell network are disabled. No neutral model baseline is claimed."
     }
   ]
 }

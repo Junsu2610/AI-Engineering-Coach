@@ -1,0 +1,5 @@
+{
+  "name": "benchmark-missing-authority",
+  "private": true,
+  "type": "module"
+}

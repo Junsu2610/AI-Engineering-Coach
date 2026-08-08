@@ -5,11 +5,18 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { PILOT_SCENARIO_IDS, runPilotScenario } from './pilot';
+import {
+  FULL_SCENARIO_IDS,
+  PILOT_SCENARIO_IDS,
+  runPilotScenario,
+  validateExecutableFixtures,
+} from './pilot';
 import { renderBenchmarkReport } from './report';
 import {
   scoreRun,
+  scenarioTracks,
   summarizeBenchmark,
   validateConfigs,
   validateRun,
@@ -19,6 +26,7 @@ import type {
   BenchmarkConfigSet,
   BenchmarkRun,
   BenchmarkSuite,
+  BenchmarkTrack,
   RunCategoryScores,
 } from './types';
 
@@ -64,7 +72,11 @@ function loadContracts(
 }
 
 function contractErrors(suite: BenchmarkSuite, configs: BenchmarkConfigSet): string[] {
-  return [...validateSuite(suite), ...validateConfigs(configs)];
+  return [
+    ...validateSuite(suite),
+    ...validateConfigs(configs),
+    ...validateExecutableFixtures(suite),
+  ];
 }
 
 function assertContracts(suite: BenchmarkSuite, configs: BenchmarkConfigSet): void {
@@ -207,7 +219,6 @@ async function pilotCommand(args: string[]): Promise<void> {
     throw new Error(`--iterations must not exceed suite repetitions (${suite.repetitions})`);
   }
   const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
-  const runs: BenchmarkRun[] = [];
   for (let iteration = 1; iteration <= iterations; iteration += 1) {
     for (const scenarioId of PILOT_SCENARIO_IDS) {
       console.log(`Running ${scenarioId} iteration ${iteration}...`);
@@ -234,6 +245,121 @@ async function pilotCommand(args: string[]): Promise<void> {
   writeFileSync(jsonPath, `${JSON.stringify(summary, undefined, 2)}\n`, 'utf8');
   console.log(`Created ${reportPath}`);
   console.log(`Created ${jsonPath}`);
+}
+
+export function selectFullScenarioIds(
+  suite: BenchmarkSuite,
+  track: BenchmarkTrack | 'all',
+): string[] {
+  return FULL_SCENARIO_IDS.filter(scenarioId => {
+    if (track === 'all') {
+      return true;
+    }
+    const scenario = suite.scenarios.find(candidate => candidate.id === scenarioId);
+    return scenario !== undefined && scenarioTracks(scenario).includes(track);
+  });
+}
+
+interface ReusableRun {
+  run: BenchmarkRun;
+  path: string;
+}
+
+export function loadReusableFullRun(
+  suite: BenchmarkSuite,
+  configs: BenchmarkConfigSet,
+  resultsRoot: string,
+  scenarioId: string,
+  configId: string,
+  iteration: number,
+): ReusableRun | undefined {
+  const runId = `${scenarioId}-${configId}-r${iteration}`;
+  const path = join(resultsRoot, configId, `${runId}.json`);
+  if (!existsSync(path)) {
+    return undefined;
+  }
+  const run = readJson<BenchmarkRun>(path);
+  const errors = validateRun(suite, configs, run);
+  if (run.schemaVersion !== 2) {
+    errors.push(`${runId} must be a schemaVersion 2 executable run`);
+  }
+  if (run.status !== 'completed') {
+    errors.push(`${runId} must be completed before it can be reused`);
+  }
+  if (run.runId !== runId || run.scenarioId !== scenarioId
+    || run.configId !== configId || run.iteration !== iteration) {
+    errors.push(`${runId} does not match the expected reusable run identity`);
+  }
+  if (errors.length > 0) {
+    throw new Error(errors.join('\n'));
+  }
+  return { run, path };
+}
+
+async function fullCommand(args: string[]): Promise<void> {
+  const { suite, configs } = loadContracts(args, PILOT_CONFIG_PATH);
+  assertContracts(suite, configs);
+  const configId = requiredFlag(args, '--config');
+  const iterations = integerFlag(args, '--iterations', 1);
+  if (iterations > suite.repetitions) {
+    throw new Error('--iterations must not exceed suite repetitions (' + suite.repetitions + ')');
+  }
+  const track = readFlag(args, '--track') ?? 'all';
+  if (track !== 'all' && !['manager', 'coder'].includes(track)) {
+    throw new Error('--track must be manager, coder, or all');
+  }
+  const selectedScenarioIds = selectFullScenarioIds(
+    suite,
+    track as BenchmarkTrack | 'all',
+  );
+  if (selectedScenarioIds.length === 0) {
+    throw new Error('No executable scenarios found for track ' + track);
+  }
+  const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
+  for (let iteration = 1; iteration <= iterations; iteration += 1) {
+    for (const scenarioId of selectedScenarioIds) {
+      const reusable = loadReusableFullRun(
+        suite,
+        configs,
+        resultsRoot,
+        scenarioId,
+        configId,
+        iteration,
+      );
+      if (reusable !== undefined) {
+        console.log('Reusing ' + reusable.path);
+        continue;
+      }
+      console.log('Running ' + scenarioId + ' iteration ' + iteration + '...');
+      const result = await runPilotScenario(suite, configs, {
+        scenarioId,
+        configId,
+        iteration,
+        resultsRoot,
+        timeoutMs: readFlag(args, '--timeout-ms') === undefined
+          ? undefined
+          : integerFlag(args, '--timeout-ms', 1),
+        keepWorkspace: args.includes('--keep-workspace'),
+        executable: readFlag(args, '--codex-bin'),
+      });
+      console.log('Created ' + result.runPath);
+    }
+  }
+  const reportRuns = loadRuns(resultsRoot);
+  const reportErrors = reportRuns.flatMap(run => validateRun(suite, configs, run));
+  if (reportErrors.length > 0) {
+    throw new Error(reportErrors.join('\n'));
+  }
+  const summary = summarizeBenchmark(suite, configs, reportRuns);
+  const reportPath = join(resultsRoot, 'full-report.md');
+  const jsonPath = join(resultsRoot, 'full-report.json');
+  mkdirSync(resultsRoot, { recursive: true });
+  writeFileSync(reportPath, renderBenchmarkReport(summary), 'utf8');
+  writeFileSync(jsonPath, JSON.stringify(summary, undefined, 2) + '\n', 'utf8');
+  console.log('Created ' + reportPath);
+  console.log('Created ' + jsonPath);
+  console.log('Track=' + track + '; scenarios=' + selectedScenarioIds.length
+    + '; iterations=' + iterations + '; report runs=' + reportRuns.length);
 }
 
 function scoreCommand(args: string[]): void {
@@ -279,17 +405,20 @@ function reportCommand(args: string[]): void {
 function printHelp(): void {
   console.log(`Model and harness benchmark
 
+Common contract flags: [--suite FILE] [--configs FILE]
+
 Commands:
   validate [--suite FILE] [--configs FILE] [--runs PATH]
   template --scenario ID --config ID --iteration N [--out FILE]
   run --scenario ID --config ID [--iteration N] [--results DIR] [--timeout-ms N]
   pilot --config ID [--iterations N] [--results DIR] [--timeout-ms N]
+  full --config ID [--track manager|coder|all] [--iterations N] [--results DIR] [--timeout-ms N]
   score --run FILE
   report --runs PATH [--out FILE] [--json-out FILE]
 `);
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const [, , command = 'help', ...args] = process.argv;
   if (command === 'validate') {
     validateCommand(args);
@@ -299,6 +428,8 @@ async function main(): Promise<void> {
     await runCommand(args);
   } else if (command === 'pilot') {
     await pilotCommand(args);
+  } else if (command === 'full') {
+    await fullCommand(args);
   } else if (command === 'score') {
     scoreCommand(args);
   } else if (command === 'report') {
@@ -310,7 +441,10 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+const entryPath = process.argv[1] === undefined ? undefined : resolve(process.argv[1]);
+if (entryPath === resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

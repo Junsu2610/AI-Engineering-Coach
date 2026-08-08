@@ -33,6 +33,8 @@ export interface BenchmarkScenario {
   title: string;
   category: string;
   difficulty: 'small' | 'medium' | 'large';
+  /** Tracks the operating role exercised by the scenario. */
+  tracks?: BenchmarkTrack[];
   prompt: string;
   setup: string[];
   acceptance: string[];
@@ -48,6 +50,9 @@ export interface BenchmarkFixtureReference {
   version: string;
   verifier: string;
 }
+
+export const BENCHMARK_TRACKS = ['manager', 'coder'] as const;
+export type BenchmarkTrack = typeof BENCHMARK_TRACKS[number];
 
 export interface BenchmarkSuite {
   schemaVersion: 1;
@@ -66,6 +71,14 @@ export type BenchmarkRole = 'baseline' | 'candidate' | 'native';
 export type BenchmarkAdapterId = 'manual' | 'codex-exec';
 export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';
 
+export interface CodexProviderConfig {
+  id: string;
+  name: string;
+  baseUrl: string;
+  envKey: string;
+  wireApi: 'responses' | 'chat';
+}
+
 export interface BenchmarkConfig {
   id: string;
   harness: string;
@@ -75,6 +88,7 @@ export interface BenchmarkConfig {
   baselineConfigId?: string;
   adapter?: BenchmarkAdapterId;
   reasoningEffort?: ReasoningEffort;
+  codexProvider?: CodexProviderConfig;
   notes?: string;
 }
 
@@ -113,6 +127,7 @@ export interface BenchmarkExecution {
   adapter: BenchmarkAdapterId;
   adapterVersion?: string;
   model: string;
+  modelProvider?: string;
   reasoningEffort?: ReasoningEffort;
   mode: BenchmarkMode;
   outcome: 'completed' | 'failed' | 'timed_out' | 'adapter_error';
@@ -199,6 +214,21 @@ export interface ConfigSummary {
   modelBaseline?: number;
   harnessUplift?: number;
   nativeScore?: number;
+  tracks: TrackSummary[];
+}
+
+export interface TrackSummary {
+  track: BenchmarkTrack;
+  completedScenarioCount: number;
+  suiteScenarioCount: number;
+  coverage: number;
+  score: number;
+  successRate: number;
+  hardFailureCount: number;
+  p50DurationMs: number;
+  p90DurationMs: number;
+  measurementCoverage: number;
+  categoryScores: ScoreWeights;
 }
 
 export interface BenchmarkSummary {

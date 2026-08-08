@@ -4,10 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import {
-  SCORE_CATEGORIES, type BenchmarkConfig, type BenchmarkConfigSet, type BenchmarkRun,
+  BENCHMARK_TRACKS, SCORE_CATEGORIES, type BenchmarkConfig, type BenchmarkConfigSet, type BenchmarkRun,
   type BenchmarkScenario, type BenchmarkSuite, type BenchmarkSummary, type BudgetRange,
   type BenchmarkExecution, type BenchmarkVerification, type BenchmarkVerificationCheck,
   type ConfigSummary, type ScoredRun, type RunCategoryScores, type ScoreCategory,
+  type BenchmarkTrack, type TrackSummary,
   type ScoreWeights,
 } from './types';
 
@@ -50,6 +51,12 @@ function automaticWeight(suite: BenchmarkSuite, scenario: BenchmarkScenario): nu
   );
 }
 
+export function scenarioTracks(scenario: BenchmarkScenario): BenchmarkTrack[] {
+  return scenario.tracks === undefined || scenario.tracks.length === 0
+    ? [...BENCHMARK_TRACKS]
+    : scenario.tracks;
+}
+
 function validateScenario(
   suite: BenchmarkSuite,
   scenario: BenchmarkScenario,
@@ -63,6 +70,20 @@ function validateScenario(
     errors.push(`Duplicate scenario id: ${scenario.id}`);
   }
   scenarioIds.add(scenario.id);
+  if (scenario.tracks !== undefined) {
+    if (scenario.tracks.length === 0) {
+      errors.push(`${scenario.id} tracks must not be empty`);
+    }
+    const trackSet = new Set<BenchmarkTrack>(scenario.tracks);
+    if (trackSet.size !== scenario.tracks.length) {
+      errors.push(`${scenario.id} tracks contains duplicates`);
+    }
+    for (const track of scenario.tracks) {
+      if (!BENCHMARK_TRACKS.includes(track)) {
+        errors.push(`${scenario.id} contains unknown track ${String(track)}`);
+      }
+    }
+  }
   errors.push(...validateScore(`${scenario.id}.passScore`, scenario.passScore));
   errors.push(...validateScore(`${scenario.id}.minimumCorrectness`, scenario.minimumCorrectness));
   const categorySet = new Set<ScoreCategory>(scenario.automaticCategories);
@@ -160,6 +181,33 @@ export function validateConfigs(configSet: BenchmarkConfigSet): string[] {
     if (config.reasoningEffort !== undefined
       && !['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(config.reasoningEffort)) {
       errors.push(`${config.id} has invalid reasoning effort ${String(config.reasoningEffort)}`);
+    }
+    if (config.codexProvider !== undefined) {
+      const provider = config.codexProvider;
+      if (config.adapter !== 'codex-exec') {
+        errors.push(`${config.id} codexProvider requires the codex-exec adapter`);
+      }
+      if (!SAFE_ID_PATTERN.test(provider.id)) {
+        errors.push(`${config.id} has invalid Codex provider id ${provider.id}`);
+      }
+      if (provider.name.trim().length === 0) {
+        errors.push(`${config.id} Codex provider name must not be empty`);
+      }
+      try {
+        const url = new URL(provider.baseUrl);
+        if (!['http:', 'https:'].includes(url.protocol) || url.username.length > 0
+          || url.password.length > 0) {
+          errors.push(`${config.id} Codex provider baseUrl must be an HTTP URL without credentials`);
+        }
+      } catch {
+        errors.push(`${config.id} Codex provider baseUrl must be a valid URL`);
+      }
+      if (!/^[A-Z_][A-Z0-9_]*$/.test(provider.envKey)) {
+        errors.push(`${config.id} has invalid Codex provider envKey ${provider.envKey}`);
+      }
+      if (!['responses', 'chat'].includes(provider.wireApi)) {
+        errors.push(`${config.id} has invalid Codex provider wireApi ${String(provider.wireApi)}`);
+      }
     }
   }
   for (const config of configSet.configs) {
@@ -445,6 +493,10 @@ export function validateRun(
         && run.execution.reasoningEffort !== config.reasoningEffort) {
         errors.push(`${run.runId} reasoning effort does not match its config`);
       }
+      if (config.codexProvider !== undefined
+        && run.execution.modelProvider !== config.codexProvider.id) {
+        errors.push(`${run.runId} model provider does not match its config`);
+      }
     }
   }
   const knownHardFailures = new Set(suite.hardFailureCodes);
@@ -551,7 +603,54 @@ function pairedUplift(candidateRuns: ScoredRun[], baselineRuns: ScoredRun[]): nu
   return differences.length === 0 ? undefined : round(mean(differences));
 }
 
-function summarizeConfig(config: BenchmarkConfig, runs: ScoredRun[]): ConfigSummary {
+function meanCategoryScores(runs: ScoredRun[]): ScoreWeights {
+  return Object.fromEntries(SCORE_CATEGORIES.map(category => {
+    const grouped = new Map<string, number[]>();
+    for (const run of runs) {
+      const values = grouped.get(run.scenario.id) ?? [];
+      values.push(run.categoryScores[category]);
+      grouped.set(run.scenario.id, values);
+    }
+    const perScenario = [...grouped.values()].map(values => mean(values));
+    return [category, round(mean(perScenario))];
+  })) as ScoreWeights;
+}
+
+function summarizeTrack(
+  suite: BenchmarkSuite,
+  track: BenchmarkTrack,
+  runs: ScoredRun[],
+): TrackSummary {
+  const scenarioIds = new Set(runs.map(run => run.scenario.id));
+  const suiteScenarioCount = suite.scenarios.filter(
+    scenario => scenarioTracks(scenario).includes(track),
+  ).length;
+  const perScenario = [...scenarioScores(runs).values()];
+  const accepted = runs.filter(run => run.passed);
+  return {
+    track,
+    completedScenarioCount: scenarioIds.size,
+    suiteScenarioCount,
+    coverage: suiteScenarioCount === 0
+      ? 0
+      : round(100 * scenarioIds.size / suiteScenarioCount),
+    score: round(mean(perScenario)),
+    successRate: runs.length === 0 ? 0 : round(100 * accepted.length / runs.length),
+    hardFailureCount: runs.reduce((total, run) => total + run.run.hardFailures.length, 0),
+    p50DurationMs: median(runs.map(run => run.run.metrics.durationMs)),
+    p90DurationMs: percentile(runs.map(run => run.run.metrics.durationMs), 0.9),
+    measurementCoverage: runs.length === 0
+      ? 0
+      : round(mean(runs.map(run => run.efficiencyMetricCoverage))),
+    categoryScores: meanCategoryScores(runs),
+  };
+}
+
+function summarizeConfig(
+  suite: BenchmarkSuite,
+  config: BenchmarkConfig,
+  runs: ScoredRun[],
+): ConfigSummary {
   const perScenario = [...scenarioScores(runs).values()];
   const accepted = runs.filter(run => run.passed);
   const costs = runs.map(run => run.run.metrics.costUsd);
@@ -569,6 +668,11 @@ function summarizeConfig(config: BenchmarkConfig, runs: ScoredRun[]): ConfigSumm
     scoreSpread: round(percentile(runs.map(run => run.finalScore), 0.9)
       - percentile(runs.map(run => run.finalScore), 0.1)),
     measurementCoverage: round(mean(runs.map(run => run.efficiencyMetricCoverage))),
+    tracks: BENCHMARK_TRACKS.map(track => summarizeTrack(
+      suite,
+      track,
+      runs.filter(run => scenarioTracks(run.scenario).includes(track)),
+    )),
   };
 }
 
@@ -587,7 +691,7 @@ export function summarizeBenchmark(
   }
   const summaries = configSet.configs
     .filter(config => runsByConfig.has(config.id))
-    .map(config => summarizeConfig(config, runsByConfig.get(config.id) ?? []));
+    .map(config => summarizeConfig(suite, config, runsByConfig.get(config.id) ?? []));
   const summaryById = new Map(summaries.map(summary => [summary.config.id, summary]));
   for (const summary of summaries) {
     const baselineId = summary.config.role === 'baseline'

@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-config-precedence",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/config-precedence.test.mjs"
+  }
+}

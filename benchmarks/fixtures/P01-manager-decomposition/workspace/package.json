@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-manager-decomposition",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/*.test.mjs"
+  }
+}

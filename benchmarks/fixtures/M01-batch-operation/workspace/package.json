@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-batch-operation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/batch-operation.test.mjs"
+  }
+}

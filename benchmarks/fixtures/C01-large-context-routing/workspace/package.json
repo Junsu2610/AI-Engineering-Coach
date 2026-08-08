@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-large-context-routing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/filter-routing.test.mjs"
+  }
+}

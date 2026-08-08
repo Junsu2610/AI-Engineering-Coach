@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { parseCodexJsonl } from './codex-exec';
+import { buildCodexEnvironment, buildCodexExecArgs, parseCodexJsonl } from './codex-exec';
 
 describe('parseCodexJsonl', () => {
   it('deduplicates tool lifecycles and reads final cumulative usage', () => {
@@ -55,6 +55,7 @@ describe('parseCodexJsonl', () => {
     expect(summary.finalMessage).toBe('Done.');
     expect(summary.parseErrors).toEqual([]);
     expect(summary.authenticationFailed).toBe(false);
+    expect(summary.permissionFailed).toBe(false);
   });
 
   it('records malformed lines and forbidden network activity', () => {
@@ -93,5 +94,64 @@ describe('parseCodexJsonl', () => {
     ].join('\n'));
 
     expect(summary.authenticationFailed).toBe(true);
+  });
+
+  it('detects a command rejected by the permission policy', () => {
+    const summary = parseCodexJsonl(JSON.stringify({
+      type: 'item.completed',
+      item: {
+        id: 'command-1',
+        type: 'command_execution',
+        command: 'npm test',
+        aggregated_output: '`npm test` rejected: blocked by policy',
+        exit_code: -1,
+        status: 'declined',
+      },
+    }));
+
+    expect(summary.permissionFailed).toBe(true);
+  });
+
+  it('pins a custom provider while preserving only its credential', () => {
+    const env = buildCodexEnvironment('OPENAI_API_KEY', {
+      OPENAI_API_KEY: 'provider-key',
+      CODEX_ACCESS_TOKEN: 'remove-me',
+      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: 'Codex Desktop',
+      CODEX_PERMISSION_PROFILE: ':danger-full-access',
+      CODEX_THREAD_ID: 'desktop-thread',
+      OTHER_SECRET: 'remove-me',
+      PATH: 'test-path',
+    });
+    const args = buildCodexExecArgs({
+      cwd: 'C:\\fixture',
+      prompt: 'Complete the task.',
+      model: 'gpt-5.6-sol',
+      provider: {
+        id: 'nine_router_local',
+        name: '9Router Local',
+        baseUrl: 'http://127.0.0.1:9011/v1',
+        envKey: 'OPENAI_API_KEY',
+        wireApi: 'responses',
+      },
+      reasoningEffort: 'ultra',
+      timeoutMs: 1_000,
+      lastMessagePath: 'C:\\result.md',
+    });
+
+    expect(env.OPENAI_API_KEY).toBe('provider-key');
+    expect(env.CODEX_ACCESS_TOKEN).toBeUndefined();
+    expect(env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE).toBeUndefined();
+    expect(env.CODEX_PERMISSION_PROFILE).toBeUndefined();
+    expect(env.CODEX_THREAD_ID).toBeUndefined();
+    expect(env.OTHER_SECRET).toBeUndefined();
+    expect(args).toEqual(expect.arrayContaining([
+      'projects."C:\\\\fixture".trust_level="trusted"',
+      'model_provider="nine_router_local"',
+      'model_providers.nine_router_local.base_url="http://127.0.0.1:9011/v1"',
+      'model_providers.nine_router_local.env_key="OPENAI_API_KEY"',
+      'model_providers.nine_router_local.wire_api="responses"',
+      'windows.sandbox="unelevated"',
+    ]));
+    expect(args).not.toContain('--ignore-rules');
   });
 });

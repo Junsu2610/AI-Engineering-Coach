@@ -1,0 +1,12 @@
+diff --git a/src/user-format.mjs b/src/user-format.mjs
+--- a/src/user-format.mjs
++++ b/src/user-format.mjs
+@@
+-export function formatUser(user) {
++export function formatProfile(user) {
+   if (typeof user?.displayName !== 'string' || user.displayName.trim().length === 0) {
+     throw new Error('Display name is required.');
+   }
+-  return { ...user, displayName: user.displayName };
++  return { ...user, displayName: user.displayName.trim() };
+ }

@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/checkout-total.test.mjs"
+    "test": "node --test --test-isolation=none test/checkout-total.test.mjs"
   }
 }

@@ -2,7 +2,7 @@
 
 This benchmark compares AI coding configurations without attributing every end-to-end result to the model alone. A configuration is the combination of a model, harness, prompt policy, tools, memory, and execution mode.
 
-The verifier and score calculation are local and offline. The optional adapter step calls the selected harness inference service, but it never reads or modifies user session logs or changes extension runtime behavior. Use `--ephemeral` and a controlled profile when you need reproducible local runs without persisting a Codex rollout.
+The verifier and score calculation are local and offline. The optional adapter step calls the selected harness inference service, but it never reads or modifies user session logs or changes extension runtime behavior. The checked-in Codex adapter applies an ephemeral controlled profile itself, so operators do not need to pass a separate `--ephemeral` benchmark flag.
 
 ## What It Measures
 
@@ -21,7 +21,7 @@ If the same model cannot run in both configurations, report only the configurati
 
 ## Suite
 
-[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 12 scenarios covering:
+[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 14 scenarios covering:
 
 - repository understanding and diagnosis;
 - focused and asynchronous bug fixes;
@@ -29,8 +29,13 @@ If the same model cannot run in both configurations, report only the configurati
 - large-context routing and failure recovery;
 - dirty working tree safety and missing authority;
 - evidence-backed reporting and checkpoint recovery.
+- manager task decomposition and coder-proposal review.
 
-Each scenario is run three times. Use a fresh isolated working tree or disposable repository copy for every run. Randomize configuration order, clear warm caches in controlled mode, and keep the initial prompt unchanged.
+The suite contains 10 Manager-track scenarios, 8 Coder-track scenarios, and 4 shared scenarios. The checked-in Codex adapter has executable hidden verifiers for 13 scenarios: 9 Manager-track and 7 Coder-track scenarios. `L01-checkpoint-resume` remains manual-only because a true resume test requires a harness interruption/resume adapter. Consequently, a complete automated run reports Manager coverage `9/10` and Coder coverage `7/8`; that manual gap is expected rather than a missing automated run.
+
+Run each executable scenario three times for a headline result. Every automated scenario receives a fresh disposable repository copy. Randomize configuration order across harnesses, clear warm caches in controlled mode, and keep the initial prompt unchanged.
+
+The manual checkpoint kit is [`benchmarks/fixtures/L01-checkpoint-resume/README.md`](../benchmarks/fixtures/L01-checkpoint-resume/README.md). It keeps the oracle outside the harness-visible workspace and requires a real interrupt/resume event.
 
 ## Score
 
@@ -53,7 +58,7 @@ Efficiency uses the available duration, token, cost, and tool-call measurements.
 
 Copy [`benchmarks/configs.example.json`](../benchmarks/configs.example.json) and replace the example model identifiers with the exact identifiers exposed by each harness. Keep one controlled neutral configuration per model and point candidate and native configurations to it through `baselineConfigId`.
 
-The example includes Codex, Claude, Cursor, and Antigravity configurations using the same model identifier. Remove combinations that are not actually available rather than simulating them.
+The example includes Codex, Claude, Cursor, and Antigravity configurations using the same model identifier. Remove combinations that are not actually available rather than simulating them. The checked-in `codex-exec` adapter supports controlled mode only; native configurations must use a native-capable adapter or a manual run record. This prevents a controlled run from being mislabeled as a native score.
 
 ## Commands
 
@@ -62,6 +67,24 @@ Validate the suite and configuration matrix:
 ```powershell
 npm run benchmark:agents -- validate
 ```
+
+Validate the checked-in Codex GPT-5.6 Sol Ultra configuration routed through 9Router:
+
+```powershell
+npm run benchmark:agents -- validate `
+  --configs benchmarks/configs.codex-sol-ultra.json
+```
+
+Before a 9Router run, confirm that the configured credential exists and the local listener in [`benchmarks/configs.codex-sol-ultra.json`](../benchmarks/configs.codex-sol-ultra.json) is reachable:
+
+```powershell
+if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
+  throw 'OPENAI_API_KEY is required by the nine_router_local provider.'
+}
+Test-NetConnection 127.0.0.1 -Port 9011
+```
+
+All commands accept `--suite FILE` and `--configs FILE`. Use the same configuration matrix for validation, execution, scoring, and reporting.
 
 Create a draft run record:
 
@@ -100,9 +123,33 @@ npm run benchmark:agents -- pilot `
 
 The pilot creates `benchmarks/results/<config-id>/` records, raw JSONL/stderr/final-message artifacts, and `benchmarks/results/pilot-report.md` plus `pilot-report.json`. It refuses to overwrite an existing iteration. Add `--keep-workspace` only when debugging a failed run.
 
-If Codex CLI reports an expired or invalid login, the pilot stops after preserving diagnostic artifacts and does not create a scored run record. Run `codex login`, complete the browser flow, then retry the same iteration.
+If the configured provider rejects authentication or Codex CLI denies required fixture actions, the pilot stops after preserving redacted diagnostic artifacts and does not create a scored run record. Check the 9Router endpoint and the configured provider credential, or fix the controlled permission setup, then retry the same iteration.
 
-The checked-in pilot config pins `model: gpt-5.6-sol`, `reasoningEffort: ultra`, and `adapter: codex-exec`. It is a controlled configuration score only: it is not a neutral model baseline, harness uplift, or native-memory score. A native run requires a separately scrubbed Codex profile so personal memories, skills, and account context do not contaminate the comparison.
+The checked-in pilot config pins `model: gpt-5.6-sol`, `reasoningEffort: ultra`, `adapter: codex-exec`, and the local `nine_router_local` custom provider. The adapter supplies the provider metadata and fixture trust through CLI overrides, preserves only the provider's named credential environment variable, removes inherited Codex Desktop runtime context, and uses a disposable `CODEX_HOME`. On Windows, it also stages a disposable executable bundle when the selected `codex.exe` does not have the signed native sandbox helpers beside it. Personal config, rules, skills, plugins, memories, and account context therefore do not contaminate the controlled run, while the workspace-write sandbox, native Windows `unelevated` fallback, and disabled shell network remain enforced. Captured artifacts and command records redact recognized secrets and the configured provider credential. It is a controlled configuration score only: it is not a neutral model baseline, harness uplift, or native-memory score.
+
+Run the full executable manager/coder scenario suite:
+
+```powershell
+npm run benchmark:agents -- full `
+  --config gpt-5.6-sol-codex-controlled-ultra `
+  --track all `
+  --iterations 3 `
+  --results benchmarks/results/gpt-5.6-sol-full-3x
+```
+
+Use `--track manager` or `--track coder` to run one scenario track. The report includes overall score plus separate **Manager** and **Coder scenario-track** rows with scenario coverage, success rate, category scores, hard failures, and latency. Shared scenarios are counted in both tracks. These are task-track scores, not inferred internal subagent roles; the controlled Codex JSONL does not expose manager/coder attribution.
+
+The `full` command is resumable. It reuses an existing valid schema-version-2 run for the same scenario, configuration, and iteration, then rebuilds `full-report.md` and `full-report.json` from every compatible run under the selected result root. This permits an interrupted run, or separate Manager and Coder invocations, to continue in the same dedicated root without overwriting completed evidence. Prefer `--track all` for a single complete automated pass.
+
+For a multi-configuration comparison, use one dedicated result root and the same matrix file for every invocation, then regenerate the combined report explicitly:
+
+```powershell
+npm run benchmark:agents -- report `
+  --configs benchmarks/configs.matrix.json `
+  --runs benchmarks/results/comparison-3x `
+  --out benchmarks/results/comparison-3x/report.md `
+  --json-out benchmarks/results/comparison-3x/report.json
+```
 
 Benchmark outputs under `benchmarks/results/` are ignored by Git because they may contain local cost, timing, workspace, or model details.
 
@@ -117,7 +164,7 @@ Each harness adapter produces one JSON run record with:
 - zero or more hard-failure codes;
 - `status: "completed"` only after the verifier finishes.
 
-Executable pilot records use `schemaVersion: 2`. Their category scores are derived from hidden verifier checks, not entered by the operator. The verifier snapshots raw bytes before and after the model run, checks the allowlisted fixture contract, records explicit verification command exit codes, and forces a zero score for scope, dirty-worktree, network, timeout, adapter, or secret failures.
+Executable pilot records use `schemaVersion: 2`. Their category scores are derived from hidden verifier checks, not entered by the operator. The verifier snapshots raw bytes before and after the model run, preserves baseline visible-test counts, checks dirty-file Git status, checks the allowlisted fixture contract, records explicit verification command exit codes, rejects obvious exit masking, and forces a zero score for scope, weakened tests, dirty-worktree, network, timeout, adapter, or secret failures.
 
 Keep the task fixture and hidden oracle outside the harness-visible workspace. Record command exit codes independently and compare them with the final response before assigning the evidence score.
 

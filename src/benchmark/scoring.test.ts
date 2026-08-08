@@ -9,7 +9,9 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { renderBenchmarkReport } from './report';
+import { validateExecutableFixtures } from './pilot';
 import {
+  scenarioTracks,
   scoreRun,
   summarizeBenchmark,
   validateConfigs,
@@ -105,14 +107,16 @@ function fixtureRun(
   configId: string,
   correctness: number,
   hardFailures: string[] = [],
+  scenarioId = 'scenario-1',
+  iteration = 1,
 ): BenchmarkRun {
   return {
     schemaVersion: 1,
     status: 'completed',
-    runId: `${configId}-run`,
-    scenarioId: 'scenario-1',
+    runId: `${configId}-${scenarioId}-r${iteration}`,
+    scenarioId,
     configId,
-    iteration: 1,
+    iteration,
     startedAt: '2026-08-07T00:00:00.000Z',
     metrics: {
       durationMs: 100,
@@ -135,10 +139,17 @@ describe('benchmark contracts', () => {
   it('validates the checked-in suite and example configs', () => {
     const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
     const configs = readJson<BenchmarkConfigSet>('benchmarks/configs.example.json');
+    const pilotConfigs = readJson<BenchmarkConfigSet>('benchmarks/configs.codex-sol-ultra.json');
 
     expect(validateSuite(suite)).toEqual([]);
+    expect(validateExecutableFixtures(suite)).toEqual([]);
     expect(validateConfigs(configs)).toEqual([]);
-    expect(suite.scenarios).toHaveLength(12);
+    expect(validateConfigs(pilotConfigs)).toEqual([]);
+    expect(suite.scenarios).toHaveLength(14);
+  });
+
+  it('defaults unclassified scenarios to both manager and coder tracks', () => {
+    expect(scenarioTracks(fixtureSuite().scenarios[0]!)).toEqual(['manager', 'coder']);
   });
 });
 
@@ -211,5 +222,56 @@ describe('summarizeBenchmark', () => {
 
     expect(baseline?.score).toBe(79);
     expect(baseline?.costPerAcceptedTask).toBe(4);
+  });
+
+  it('reports manager, coder, and shared scenario coverage independently', () => {
+    const base = fixtureSuite();
+    const suite: BenchmarkSuite = {
+      ...base,
+      scenarios: [
+        { ...base.scenarios[0]!, id: 'manager-only', tracks: ['manager'] },
+        { ...base.scenarios[0]!, id: 'coder-only', tracks: ['coder'] },
+        { ...base.scenarios[0]!, id: 'shared', tracks: ['manager', 'coder'] },
+      ],
+    };
+    const summary = summarizeBenchmark(suite, fixtureConfigs(), [
+      fixtureRun('model-neutral', 80, [], 'manager-only'),
+      fixtureRun('model-neutral', 100, [], 'shared'),
+    ]);
+    const baseline = summary.configs.find(item => item.config.id === 'model-neutral');
+    const manager = baseline?.tracks.find(item => item.track === 'manager');
+    const coder = baseline?.tracks.find(item => item.track === 'coder');
+
+    expect(manager).toMatchObject({
+      completedScenarioCount: 2,
+      suiteScenarioCount: 2,
+      coverage: 100,
+      score: 93.5,
+    });
+    expect(coder).toMatchObject({
+      completedScenarioCount: 1,
+      suiteScenarioCount: 2,
+      coverage: 50,
+      score: 98,
+    });
+  });
+
+  it('balances track category columns by scenario when repetitions are uneven', () => {
+    const base = fixtureSuite();
+    const suite: BenchmarkSuite = {
+      ...base,
+      scenarios: [
+        { ...base.scenarios[0]!, id: 'scenario-a', tracks: ['manager'] },
+        { ...base.scenarios[0]!, id: 'scenario-b', tracks: ['manager'] },
+      ],
+    };
+    const summary = summarizeBenchmark(suite, fixtureConfigs(), [
+      fixtureRun('model-neutral', 100, [], 'scenario-a', 1),
+      fixtureRun('model-neutral', 0, [], 'scenario-a', 2),
+      fixtureRun('model-neutral', 100, [], 'scenario-b', 1),
+    ]);
+    const manager = summary.configs[0]?.tracks.find(item => item.track === 'manager');
+
+    expect(manager?.categoryScores.correctness).toBe(75);
   });
 });

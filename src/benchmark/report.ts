@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import type { BenchmarkSummary, ConfigSummary } from './types';
+import type { BenchmarkSummary, ConfigSummary, TrackSummary } from './types';
 
 function escapeCell(value: string): string {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ');
@@ -43,6 +43,26 @@ function configRow(summary: ConfigSummary): string {
   ].join(' | ');
 }
 
+function trackRow(configId: string, summary: TrackSummary): string {
+  const categories = summary.categoryScores;
+  return [
+    escapeCell(configId),
+    summary.track,
+    `${summary.completedScenarioCount}/${summary.suiteScenarioCount} (${summary.coverage.toFixed(0)}%)`,
+    summary.score.toFixed(2),
+    `${summary.successRate.toFixed(1)}%`,
+    String(summary.hardFailureCount),
+    formatDuration(summary.p50DurationMs),
+    formatDuration(summary.p90DurationMs),
+    categories.correctness.toFixed(1),
+    categories.safety.toFixed(1),
+    categories.quality.toFixed(1),
+    categories.autonomy.toFixed(1),
+    categories.efficiency.toFixed(1),
+    categories.evidence.toFixed(1),
+  ].join(' | ');
+}
+
 export function renderBenchmarkReport(summary: BenchmarkSummary): string {
   const rows = summary.configs.map(configRow).join('\n');
   const coverageRows = summary.configs.map(config => [
@@ -62,6 +82,14 @@ Generated: ${summary.generatedAt}
 Config | Harness | Model | Mode | Score | Success | Hard failures | p50 time | p90 time | Cost / accepted task | Model baseline | Harness uplift | Native score
 --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:
 ${rows}
+
+## Manager and Coder Scenario Tracks
+
+The track score uses the same six canonical weights as the overall score. Shared scenarios are counted in both tracks; coverage shows how much of each scenario track was actually executed. These rows describe task composition, not inferred internal subagent roles.
+
+Config | Track | Scenario coverage | Score | Success | Hard failures | p50 time | p90 time | Correctness | Safety | Quality | Autonomy | Efficiency | Evidence
+--- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:
+${summary.configs.flatMap(config => config.tracks.map(track => trackRow(config.config.id, track))).join('\n')}
 
 ## Reliability and Coverage
 

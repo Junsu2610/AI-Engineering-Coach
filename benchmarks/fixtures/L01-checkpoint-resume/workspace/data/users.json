@@ -1,0 +1,15 @@
+[
+  {
+    "id": "u-1",
+    "legacyName": "Ada Lovelace",
+    "tier": "pro"
+  },
+  {
+    "id": "u-2",
+    "profile": {
+      "name": "Grace Hopper"
+    },
+    "legacyName": "Grace Hopper",
+    "flags": ["verified"]
+  }
+]

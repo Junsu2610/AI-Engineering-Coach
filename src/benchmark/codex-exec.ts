@@ -4,14 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, delimiter, dirname, extname, isAbsolute, join, resolve } from 'node:path';
 
-import type { CommandExecutionEvidence, ReasoningEffort } from './types';
+import type { CodexProviderConfig, CommandExecutionEvidence, ReasoningEffort } from './types';
 
 export interface CodexExecOptions {
   cwd: string;
   prompt: string;
   model: string;
+  provider: CodexProviderConfig;
   reasoningEffort: ReasoningEffort;
   timeoutMs: number;
   lastMessagePath: string;
@@ -28,6 +38,7 @@ export interface CodexJsonlSummary {
   finalMessage: string;
   parseErrors: string[];
   authenticationFailed: boolean;
+  permissionFailed: boolean;
   usedNetworkTool: boolean;
 }
 
@@ -87,6 +98,10 @@ function isAuthenticationFailure(message: string): boolean {
   return /(?:access token could not be refreshed|invalid_refresh_token|token_expired|please log out and sign in again)/i.test(message);
 }
 
+function isPermissionFailure(message: string): boolean {
+  return /(?:rejected: blocked by policy|writing is blocked by read-only sandbox|rejected by user approval settings)/i.test(message);
+}
+
 export function parseCodexJsonl(raw: string): CodexJsonlSummary {
   const toolIds = new Set<string>();
   const commands = new Map<string, CommandExecutionEvidence>();
@@ -97,6 +112,7 @@ export function parseCodexJsonl(raw: string): CodexJsonlSummary {
   let outputTokens: number | undefined;
   let reasoningOutputTokens: number | undefined;
   let authenticationFailed = false;
+  let permissionFailed = false;
   let usedNetworkTool = false;
 
   for (const [index, line] of raw.split(/\r?\n/).entries()) {
@@ -123,6 +139,7 @@ export function parseCodexJsonl(raw: string): CodexJsonlSummary {
     const eventError = isRecord(event.error) ? event.error : undefined;
     const errorMessage = stringValue(event, 'message') ?? stringValue(eventError, 'message') ?? '';
     authenticationFailed ||= isAuthenticationFailure(errorMessage);
+    permissionFailed ||= isPermissionFailure(errorMessage);
     if ((eventType === 'item.started' || eventType === 'item.completed')
       && itemType !== undefined && toolItem(itemType)) {
       toolIds.add(itemId);
@@ -133,6 +150,8 @@ export function parseCodexJsonl(raw: string): CodexJsonlSummary {
     }
     if (eventType === 'item.completed' && itemType === 'command_execution') {
       const command = stringValue(item, 'command') ?? '';
+      const output = stringValue(item, 'aggregated_output', 'output') ?? '';
+      permissionFailed ||= isPermissionFailure(output);
       commands.set(itemId, {
         id: itemId,
         command,
@@ -168,23 +187,161 @@ export function parseCodexJsonl(raw: string): CodexJsonlSummary {
     finalMessage,
     parseErrors,
     authenticationFailed,
+    permissionFailed,
     usedNetworkTool,
   };
 }
 
-function scrubEnvironment(): NodeJS.ProcessEnv {
-  const env = { ...process.env };
+export function buildCodexEnvironment(
+  providerEnvKey: string,
+  source: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const env = { ...source };
   for (const key of Object.keys(env)) {
-    if (/(?:^|_)(?:API_?KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS?)(?:_|$)/i.test(key)) {
+    if (key !== providerEnvKey && (
+      key.startsWith('CODEX_')
+      || /(?:^|_)(?:API_?KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS?)(?:_|$)/i.test(key)
+    )) {
       delete env[key];
     }
+  }
+  if (env[providerEnvKey]?.trim().length === 0) {
+    throw new Error(`Missing Codex provider credential environment variable: ${providerEnvKey}`);
   }
   env.GIT_TERMINAL_PROMPT = '0';
   return env;
 }
 
+function tomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function projectTrustConfig(path: string): string {
+  return `projects.${tomlString(path)}.trust_level="trusted"`;
+}
+
+export function buildCodexExecArgs(options: CodexExecOptions): string[] {
+  const providerKey = `model_providers.${options.provider.id}`;
+  return [
+    'exec',
+    '--json',
+    '--color',
+    'never',
+    '--ephemeral',
+    '--ignore-user-config',
+    '--strict-config',
+    '--disable',
+    'apps',
+    '--disable',
+    'memories',
+    '--disable',
+    'plugins',
+    '--disable',
+    'remote_plugin',
+    '--disable',
+    'multi_agent',
+    '--sandbox',
+    'workspace-write',
+    '-C',
+    options.cwd,
+    '--model',
+    options.model,
+    '--config',
+    `model_provider=${tomlString(options.provider.id)}`,
+    '--config',
+    projectTrustConfig(options.cwd),
+    '--config',
+    `${providerKey}.name=${tomlString(options.provider.name)}`,
+    '--config',
+    `${providerKey}.base_url=${tomlString(options.provider.baseUrl)}`,
+    '--config',
+    `${providerKey}.env_key=${tomlString(options.provider.envKey)}`,
+    '--config',
+    `${providerKey}.wire_api=${tomlString(options.provider.wireApi)}`,
+    '--config',
+    `model_reasoning_effort=${tomlString(options.reasoningEffort)}`,
+    '--config',
+    'approval_policy="never"',
+    '--config',
+    'web_search="disabled"',
+    '--config',
+    'sandbox_workspace_write.network_access=false',
+    '--config',
+    'windows.sandbox="unelevated"',
+    '--output-last-message',
+    options.lastMessagePath,
+    '-',
+  ];
+}
+
 function codexExecutable(override: string | undefined): string {
   return override ?? process.env.CODEX_BIN ?? (process.platform === 'win32' ? 'codex.exe' : 'codex');
+}
+
+interface PreparedCodexExecutable {
+  executable: string;
+  cleanupRoot?: string;
+}
+
+const WINDOWS_CODEX_HELPERS = [
+  'codex-windows-sandbox-setup.exe',
+  'codex-command-runner.exe',
+  'codex-code-mode-host.exe',
+];
+
+function resolveWindowsExecutable(executable: string): string | undefined {
+  if (isAbsolute(executable)) {
+    return existsSync(executable) ? executable : undefined;
+  }
+  if (executable.includes('\\') || executable.includes('/')) {
+    const candidate = resolve(executable);
+    return existsSync(candidate) ? candidate : undefined;
+  }
+  const extensions = extname(executable).length > 0
+    ? ['']
+    : (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';');
+  for (const directory of (process.env.PATH ?? '').split(delimiter)) {
+    const cleanDirectory = directory.trim().replace(/^"|"$/g, '');
+    if (cleanDirectory.length === 0) {
+      continue;
+    }
+    for (const extension of extensions) {
+      const candidate = join(cleanDirectory, `${executable}${extension.toLowerCase()}`);
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return undefined;
+}
+
+function prepareCodexExecutable(override: string | undefined): PreparedCodexExecutable {
+  const configured = codexExecutable(override);
+  if (process.platform !== 'win32') {
+    return { executable: configured };
+  }
+  const resolved = resolveWindowsExecutable(configured) ?? configured;
+  const executableDirectory = dirname(resolved);
+  if (WINDOWS_CODEX_HELPERS.every(name => existsSync(join(executableDirectory, name)))) {
+    return { executable: resolved };
+  }
+  const setupHelper = resolveWindowsExecutable(WINDOWS_CODEX_HELPERS[0]);
+  if (setupHelper === undefined) {
+    return { executable: resolved };
+  }
+  const helperDirectory = dirname(setupHelper);
+  if (!WINDOWS_CODEX_HELPERS.every(name => existsSync(join(helperDirectory, name)))) {
+    return { executable: resolved };
+  }
+  const bundleBase = join(process.env.LOCALAPPDATA ?? tmpdir(), 'AIEngineeringCoach', 'codex-binaries');
+  mkdirSync(bundleBase, { recursive: true });
+  const cleanupRoot = mkdtempSync(join(bundleBase, 'run-'));
+  const executablePath = join(cleanupRoot, basename(resolved));
+  copyFileSync(resolved, executablePath);
+  for (const helper of WINDOWS_CODEX_HELPERS) {
+    copyFileSync(join(helperDirectory, helper), join(cleanupRoot, helper));
+  }
+  return { executable: executablePath, cleanupRoot };
 }
 
 function readCodexVersion(executable: string, env: NodeJS.ProcessEnv): string | undefined {
@@ -221,41 +378,15 @@ function terminateProcessTree(pid: number | undefined): void {
 }
 
 export async function runCodexExec(options: CodexExecOptions): Promise<CodexExecResult> {
-  const executable = codexExecutable(options.executable);
-  const env = scrubEnvironment();
+  const env = buildCodexEnvironment(options.provider.envKey);
+  const isolatedCodexHome = mkdtempSync(join(tmpdir(), 'aic-codex-home-'));
+  const preparedExecutable = prepareCodexExecutable(options.executable);
+  const executable = preparedExecutable.executable;
+  env.CODEX_HOME = isolatedCodexHome;
   const adapterVersion = readCodexVersion(executable, env);
   const startedAt = new Date().toISOString();
   const start = Date.now();
-  const args = [
-    'exec',
-    '--json',
-    '--color',
-    'never',
-    '--ephemeral',
-    '--ignore-user-config',
-    '--ignore-rules',
-    '--disable',
-    'apps',
-    '--disable',
-    'memories',
-    '--sandbox',
-    'workspace-write',
-    '-C',
-    options.cwd,
-    '--model',
-    options.model,
-    '--config',
-    `model_reasoning_effort="${options.reasoningEffort}"`,
-    '--config',
-    'approval_policy="never"',
-    '--config',
-    'web_search="disabled"',
-    '--config',
-    'sandbox_workspace_write.network_access=false',
-    '--output-last-message',
-    options.lastMessagePath,
-    '-',
-  ];
+  const args = buildCodexExecArgs(options);
 
   return await new Promise(resolve => {
     const stdout: Buffer[] = [];
@@ -297,9 +428,14 @@ export async function runCodexExec(options: CodexExecOptions): Promise<CodexExec
           : exitCode === 0
             ? 'completed'
             : 'failed';
+      rmSync(isolatedCodexHome, { recursive: true, force: true, maxRetries: 3 });
+      if (preparedExecutable.cleanupRoot !== undefined) {
+        rmSync(preparedExecutable.cleanupRoot, { recursive: true, force: true, maxRetries: 3 });
+      }
       resolve({
         ...parsed,
         authenticationFailed: parsed.authenticationFailed || isAuthenticationFailure(stderrText),
+        permissionFailed: parsed.permissionFailed || isPermissionFailure(stderrText),
         finalMessage,
         startedAt,
         finishedAt: new Date().toISOString(),
