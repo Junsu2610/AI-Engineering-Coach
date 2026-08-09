@@ -1,0 +1,1 @@
+Implemented processBatch in src/item-service.mjs and wired runBatchCommand in src/command-adapter.mjs to reuse it. Each item is processed via processItem with errors captured per item without stopping later items. npm test passed (2 tests).

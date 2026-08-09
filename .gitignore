@@ -2,6 +2,7 @@ node_modules/
 .eslintcache
 .cspellcache
 dist/
+coverage/
 *.vsix
 .vscode-test/
 .DS_Store
@@ -32,5 +33,16 @@ teamagent/state/STATUS.json
 # Private coach summary exports (local-only)
 summary/
 
-# Local model and harness benchmark outputs
-benchmarks/results/
+# Local model and harness benchmark outputs (ignored by default)
+benchmarks/results/**
+# Retained published/diagnostic cursor-session runs
+!benchmarks/results/cursor-grok-4-5-high-full-3x/
+!benchmarks/results/cursor-grok-4-5-high-full-3x/**
+!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session/
+!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session/**
+!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session-v2/
+!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session-v2/**
+!benchmarks/results/cursor-grok-4-5-high-session-pilot/
+!benchmarks/results/cursor-grok-4-5-high-session-pilot/**
+!benchmarks/results/cursor-grok-4-5-high-m02-debug/
+!benchmarks/results/cursor-grok-4-5-high-m02-debug/**

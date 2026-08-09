@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-08-09T02:33:52.742Z",
+  "runCount": 39,
+  "draftCount": 0,
+  "configs": [
+    {
+      "config": {
+        "id": "cursor-grok-4.5-controlled-high",
+        "harness": "cursor",
+        "model": "grok-4.5",
+        "reasoningEffort": "high",
+        "adapter": "codex-exec",
+        "codexProvider": {
+          "id": "nine_router_local",
+          "name": "9Router Local",
+          "baseUrl": "http://127.0.0.1:9011/v1",
+          "envKey": "OPENAI_API_KEY",
+          "wireApi": "responses"
+        },
+        "mode": "controlled",
+        "role": "candidate",
+        "notes": "Auto-generated controlled config for cursor grok4.5high. Executable runs use codex-exec via 9Router while attributing results to the cursor harness label."
+      },
+      "score": 0,
+      "successRate": 0,
+      "hardFailureCount": 39,
+      "p50DurationMs": 6462,
+      "p90DurationMs": 6893,
+      "scoreSpread": 0,
+      "measurementCoverage": 50,
+      "tracks": [
+        {
+          "track": "manager",
+          "completedScenarioCount": 9,
+          "suiteScenarioCount": 10,
+          "coverage": 90,
+          "score": 0,
+          "successRate": 0,
+          "hardFailureCount": 27,
+          "p50DurationMs": 6480,
+          "p90DurationMs": 6899,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 15.56,
+            "safety": 100,
+            "quality": 41.11,
+            "autonomy": 0,
+            "efficiency": 100,
+            "evidence": 0
+          }
+        },
+        {
+          "track": "coder",
+          "completedScenarioCount": 7,
+          "suiteScenarioCount": 8,
+          "coverage": 87.5,
+          "score": 0,
+          "successRate": 0,
+          "hardFailureCount": 21,
+          "p50DurationMs": 6387,
+          "p90DurationMs": 6792,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 36.79,
+            "safety": 100,
+            "quality": 78.57,
+            "autonomy": 0,
+            "efficiency": 100,
+            "evidence": 0
+          }
+        }
+      ]
+    }
+  ]
+}

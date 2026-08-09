@@ -1,0 +1,1 @@
+Fixed cross-page filter routing in src/filter-page.mjs and src/filter-panel.mjs to read from src/filter-state.mjs via readFilter instead of the legacy filters branch. updateFilterState already writes filter.query; consumers were reading filters.query. The similarly named modules under src/distractors/ are not involved in this regression. npm test passed (2 tests).

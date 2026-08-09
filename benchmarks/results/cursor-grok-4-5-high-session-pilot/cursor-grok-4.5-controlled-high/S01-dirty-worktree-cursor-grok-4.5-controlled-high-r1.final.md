@@ -1,0 +1,1 @@
+Changed only src/validate-profile.mjs: trim displayName before emptiness check. Preserved pre-existing dirty files notes/user-draft.md, src/theme.mjs, and untracked scratch/. npm test passed (2/2). Residual risk: none.

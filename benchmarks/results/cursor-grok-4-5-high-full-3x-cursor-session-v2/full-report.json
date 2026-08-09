@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-08-09T08:27:06.761Z",
+  "runCount": 45,
+  "draftCount": 0,
+  "configs": [
+    {
+      "config": {
+        "id": "cursor-grok-4.5-controlled-high",
+        "harness": "cursor",
+        "model": "grok-4.5",
+        "reasoningEffort": "high",
+        "adapter": "cursor-session",
+        "mode": "controlled",
+        "role": "candidate",
+        "notes": "Auto-generated controlled config for cursor grok4.5high. Runs execute in the current Cursor agent session (harness=cursor, model=grok-4.5, effort=high). No 9Router or Codex CLI."
+      },
+      "score": 100,
+      "headlineEligible": false,
+      "headlineExclusions": [
+        "adapter cursor-session is not headline-eligible",
+        "operator-assisted or non-executable records are diagnostic only"
+      ],
+      "completedScenarioCount": 15,
+      "requiredScenarioCount": 15,
+      "successRate": 100,
+      "hardFailureCount": 0,
+      "p50DurationMs": 605,
+      "p90DurationMs": 750,
+      "scoreSpread": 0,
+      "measurementCoverage": 50,
+      "tracks": [
+        {
+          "track": "manager",
+          "completedScenarioCount": 11,
+          "suiteScenarioCount": 12,
+          "coverage": 91.67,
+          "score": 100,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 599,
+          "p90DurationMs": 737,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 100,
+            "evidence": 100
+          }
+        },
+        {
+          "track": "coder",
+          "completedScenarioCount": 8,
+          "suiteScenarioCount": 9,
+          "coverage": 88.89,
+          "score": 100,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 635,
+          "p90DurationMs": 788,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 100,
+            "evidence": 100
+          }
+        }
+      ]
+    }
+  ]
+}

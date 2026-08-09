@@ -1,0 +1,1 @@
+Refactored src/normalizers.mjs to share normalizeName helper for validation and trimming. Public exports normalizeUser and normalizeAdmin unchanged; error text Name is required. appears once. npm test passed (3 tests).

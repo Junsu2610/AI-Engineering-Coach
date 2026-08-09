@@ -1,0 +1,1 @@
+Fixed off-by-one in isWithinDateWindow: end boundary now inclusive (<=). Only src/date-window.mjs changed. npm test passed (2/2). Residual risk: none.

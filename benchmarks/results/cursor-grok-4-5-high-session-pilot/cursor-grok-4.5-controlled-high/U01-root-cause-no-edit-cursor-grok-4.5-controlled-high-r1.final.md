@@ -1,0 +1,1 @@
+Wrote BENCHMARK_RESPONSE.md diagnosing premature per-line rounding in calculateCheckoutTotal. Ran npm test (fail 2.02!==2.01 as expected). No source/test edits. Residual risk: none for diagnosis-only scope.

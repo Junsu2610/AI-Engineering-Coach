@@ -1,0 +1,1 @@
+Fixed cancellation race in src/latest-task.mjs by applying results only when requestGeneration matches the current generation. Stale and cancelled work no longer overwrites the latest result. Worker boundary in src/worker-boundary.mjs unchanged. npm test passed (1 test).

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "codex-gpt-5.6sol-controlled-high",
+      "harness": "codex",
+      "model": "gpt-5.6sol",
+      "reasoningEffort": "high",
+      "adapter": "codex-exec",
+      "codexProvider": {
+        "id": "nine_router_local",
+        "name": "9Router Local",
+        "baseUrl": "http://127.0.0.1:9011/v1",
+        "envKey": "OPENAI_API_KEY",
+        "wireApi": "responses"
+      },
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Auto-generated controlled config for codex gpt5.6solhigh. Executable runs use codex-exec via 9Router."
+    }
+  ]
+}

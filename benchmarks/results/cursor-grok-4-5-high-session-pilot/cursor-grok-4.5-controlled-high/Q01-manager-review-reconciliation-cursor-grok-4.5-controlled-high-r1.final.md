@@ -1,0 +1,1 @@
+Review-only: wrote MANAGER_REVIEW.md comparing coder-a.diff and coder-b.diff against REQUEST.md. Reject both; reconcile trim from Candidate B while preserving formatUser export and notes/user-draft.md. npm test passed (1 test).

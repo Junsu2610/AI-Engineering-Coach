@@ -1,0 +1,1 @@
+Changed canonical source/shared-config.mjs only. npm test passed; runtime-mirror remained untouched.

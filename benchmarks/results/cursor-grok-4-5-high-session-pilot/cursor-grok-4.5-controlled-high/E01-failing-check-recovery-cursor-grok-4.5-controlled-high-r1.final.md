@@ -1,0 +1,1 @@
+Fixed parsePair in src/parser.mjs to split only on the first equals sign so values like a=b=c are preserved. docs/legacy-check.md references npm run check:legacy, but that script is missing/stale in package.json. npm test is the repository-authoritative check and passed (2 tests).

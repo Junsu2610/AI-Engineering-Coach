@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-08-09T03:30:32.528Z",
+  "runCount": 3,
+  "draftCount": 0,
+  "configs": [
+    {
+      "config": {
+        "id": "cursor-grok-4.5-controlled-high",
+        "harness": "cursor",
+        "model": "grok-4.5",
+        "reasoningEffort": "high",
+        "adapter": "cursor-session",
+        "mode": "controlled",
+        "role": "candidate",
+        "notes": "Auto-generated controlled config for cursor grok4.5high. Runs execute in the current Cursor agent session (harness=cursor, model=grok-4.5, effort=high). No 9Router or Codex CLI."
+      },
+      "score": 99.17,
+      "successRate": 100,
+      "hardFailureCount": 0,
+      "p50DurationMs": 11345,
+      "p90DurationMs": 11593,
+      "scoreSpread": 2.5,
+      "measurementCoverage": 50,
+      "tracks": [
+        {
+          "track": "manager",
+          "completedScenarioCount": 2,
+          "suiteScenarioCount": 10,
+          "coverage": 20,
+          "score": 98.75,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 11469,
+          "p90DurationMs": 11593,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 100,
+            "evidence": 87.5
+          }
+        },
+        {
+          "track": "coder",
+          "completedScenarioCount": 2,
+          "suiteScenarioCount": 8,
+          "coverage": 25,
+          "score": 100,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 10874.5,
+          "p90DurationMs": 11593,
+          "measurementCoverage": 50,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 100,
+            "evidence": 100
+          }
+        }
+      ]
+    }
+  ]
+}

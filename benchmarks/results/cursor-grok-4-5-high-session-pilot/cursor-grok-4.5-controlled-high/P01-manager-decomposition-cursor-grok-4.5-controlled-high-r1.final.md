@@ -1,0 +1,1 @@
+Plan-only: wrote MANAGER_PLAN.md decomposing batch import into three coder tasks for src/parser.mjs, src/store.mjs, and src/import-command.mjs with ownership, dependencies, acceptance criteria, verification via npm test, and review handoff. npm test passed (1 test).

@@ -1,0 +1,1 @@
+Changed src/validate-profile.mjs. npm test passed. Unrelated pre-existing work was preserved.

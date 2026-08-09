@@ -1,0 +1,1 @@
+Changed src/filter-page.mjs and src/filter-panel.mjs. Relevant state contract: src/filter-state.mjs. npm test passed. Legacy distractors were not involved.

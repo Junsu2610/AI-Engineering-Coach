@@ -1,0 +1,1 @@
+Changed files: src/serializer.mjs. Passing checks: npm test passed (2 tests in serializer.test.mjs). Skipped checks: none, no additional checks were unavailable or not run. Residual risk: nested object falsey values are covered by hidden verifier but not in visible tests; monitor if serializer contract expands.
