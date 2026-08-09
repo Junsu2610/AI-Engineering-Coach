@@ -1,0 +1,10 @@
+{
+  "id": "M02-inbox-triage",
+  "proposedV1Id": "M02",
+  "lane": "manager",
+  "version": "0.1.0",
+  "verifier": "m02-inbox-triage",
+  "status": "stub",
+  "allowedChanges": ["MANAGER_TRIAGE.md"],
+  "workspacePattern": "00_Manager inbox triage without code edits"
+}

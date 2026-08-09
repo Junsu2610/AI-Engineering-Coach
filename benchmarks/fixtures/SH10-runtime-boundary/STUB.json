@@ -1,0 +1,15 @@
+{
+  "id": "SH10-runtime-boundary",
+  "proposedV1Id": "SH10",
+  "lane": "shared",
+  "version": "0.1.0",
+  "verifier": "sh10-runtime-boundary",
+  "status": "stub",
+  "allowedChanges": [
+    "source/shared-config.mjs",
+    "source/service-gateway.mjs",
+    "test/gateway-binding.test.mjs"
+  ],
+  "protectedPaths": ["runtime-mirror/**"],
+  "workspacePattern": "D: source edit only; NAS runtime mirror read-only"
+}

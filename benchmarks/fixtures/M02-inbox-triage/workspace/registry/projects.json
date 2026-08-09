@@ -1,0 +1,22 @@
+{
+  "projects": [
+    {
+      "id": "compose-router",
+      "criticality": "high",
+      "runtime": "nas",
+      "notes": "AI model router; production down blocks all client gateways"
+    },
+    {
+      "id": "hr-member-app",
+      "criticality": "medium",
+      "runtime": "local",
+      "notes": "Next.js HR records; seed data drives demos"
+    },
+    {
+      "id": "translate-desktop",
+      "criticality": "low",
+      "runtime": "local",
+      "notes": "Electron tool; no NAS deploy"
+    }
+  ]
+}
