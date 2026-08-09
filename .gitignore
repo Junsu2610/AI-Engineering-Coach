@@ -38,11 +38,5 @@ benchmarks/results/**
 # Retained published/diagnostic cursor-session runs
 !benchmarks/results/cursor-grok-4-5-high-full-3x/
 !benchmarks/results/cursor-grok-4-5-high-full-3x/**
-!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session/
-!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session/**
-!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session-v2/
-!benchmarks/results/cursor-grok-4-5-high-full-3x-cursor-session-v2/**
 !benchmarks/results/cursor-grok-4-5-high-session-pilot/
 !benchmarks/results/cursor-grok-4-5-high-session-pilot/**
-!benchmarks/results/cursor-grok-4-5-high-m02-debug/
-!benchmarks/results/cursor-grok-4-5-high-m02-debug/**

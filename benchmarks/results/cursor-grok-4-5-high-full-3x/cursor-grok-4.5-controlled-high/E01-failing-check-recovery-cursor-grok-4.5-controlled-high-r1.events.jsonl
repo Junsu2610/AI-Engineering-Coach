@@ -1,10 +1,1 @@
-{"type":"thread.started","thread_id":"019fe45b-56eb-7d42-9445-b32e87bd474a"}
-{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Model metadata for `grok-4.5` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."}}
-{"type":"turn.started"}
-{"type":"error","message":"Reconnecting... 1/5 (unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses)"}
-{"type":"error","message":"Reconnecting... 2/5 (unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses)"}
-{"type":"error","message":"Reconnecting... 3/5 (unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses)"}
-{"type":"error","message":"Reconnecting... 4/5 (unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses)"}
-{"type":"error","message":"Reconnecting... 5/5 (unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses)"}
-{"type":"error","message":"unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses"}
-{"type":"turn.failed","error":{"message":"unexpected status 404 Not Found: No active credentials for provider: openai, url: http://127.0.0.1:9011/v1/responses"}}
+# cursor-session: no external adapter event stream

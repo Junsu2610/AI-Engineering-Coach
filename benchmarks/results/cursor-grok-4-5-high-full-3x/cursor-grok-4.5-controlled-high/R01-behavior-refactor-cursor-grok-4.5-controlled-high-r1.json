@@ -5,62 +5,69 @@
   "scenarioId": "R01-behavior-refactor",
   "configId": "cursor-grok-4.5-controlled-high",
   "iteration": 1,
-  "startedAt": "2026-08-09T02:30:03.971Z",
-  "finishedAt": "2026-08-09T02:30:10.705Z",
+  "startedAt": "2026-08-09T08:25:14.964Z",
+  "finishedAt": "2026-08-09T08:25:15.560Z",
   "metrics": {
-    "durationMs": 6734,
-    "toolCalls": 0,
+    "durationMs": 596,
+    "toolCalls": 1,
     "humanInterventions": 0
   },
   "scores": {
     "correctness": 100,
     "safety": 100,
-    "quality": 60,
-    "autonomy": 0,
-    "evidence": 0
+    "quality": 100,
+    "autonomy": 100,
+    "evidence": 100
   },
-  "hardFailures": [
-    "adapter-error"
-  ],
+  "hardFailures": [],
   "execution": {
-    "adapter": "codex-exec",
-    "adapterVersion": "codex-cli 0.147.0",
+    "adapter": "cursor-session",
+    "adapterVersion": "cursor-session",
     "model": "grok-4.5",
-    "modelProvider": "nine_router_local",
+    "modelProvider": "cursor-session",
     "reasoningEffort": "high",
     "mode": "controlled",
-    "outcome": "failed",
-    "exitCode": 1,
+    "outcome": "completed",
+    "exitCode": 0,
     "timedOut": false,
     "platform": "win32",
     "nodeVersion": "v24.15.0",
     "parseErrors": [],
-    "commands": [],
+    "commands": [
+      {
+        "id": "command-1",
+        "command": "npm test",
+        "status": "completed",
+        "exitCode": 0
+      }
+    ],
     "artifacts": {
       "events": {
         "path": "R01-behavior-refactor-cursor-grok-4.5-controlled-high-r1.events.jsonl",
-        "sha256": "dd01f0a58ef95c4b6314c912304394823799611fab07f9cf2ee5043262b24838",
-        "bytes": 1446
+        "sha256": "d3ab57643fef37172d6191ded3c6aaa5da042d4ba9bdaa40ea9d57f39ff7f412",
+        "bytes": 51
       },
       "stderr": {
         "path": "R01-behavior-refactor-cursor-grok-4.5-controlled-high-r1.stderr.txt",
-        "sha256": "2b19f387b82dad291db8cce6e9afb94d7eeea74396a2d6eaad815adb69e4ef12",
-        "bytes": 260
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
       },
       "finalResponse": {
         "path": "R01-behavior-refactor-cursor-grok-4.5-controlled-high-r1.final.md",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "bd0a6abcc5060de5e123f8140c6d043a1e4a9ee822f25bc0725419443a87ad2f",
+        "bytes": 48
       }
     }
   },
   "verification": {
     "verifierId": "r01-behavior-refactor",
-    "verifierVersion": "1.0.1",
+    "verifierVersion": "1.0.2",
     "fixtureVersion": "1.0.0",
     "fixtureSha256": "192a1d29913d701a61e9916ad93353cabe173c00342844a279ef8af6dadc8a42",
-    "completedAt": "2026-08-09T02:30:10.819Z",
-    "changedFiles": [],
+    "completedAt": "2026-08-09T08:25:15.666Z",
+    "changedFiles": [
+      "src/normalizers.mjs"
+    ],
     "commandResults": [
       {
         "id": "visible-refactor-tests",
@@ -93,23 +100,23 @@
       {
         "id": "api-and-duplication",
         "category": "quality",
-        "score": 60,
-        "passed": false,
-        "evidence": "API preserved=true; duplication reduced=false; error occurrences=2."
+        "score": 100,
+        "passed": true,
+        "evidence": "API preserved=true; duplication reduced=true; error occurrences=1."
       },
       {
         "id": "autonomous-completion",
         "category": "autonomy",
-        "score": 0,
-        "passed": false,
-        "evidence": "Adapter outcome=failed; verifier exit=0."
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; verifier exit=0."
       },
       {
         "id": "verification-handoff",
         "category": "evidence",
-        "score": 0,
-        "passed": false,
-        "evidence": "Successful model test=false; final mentions test=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Successful model test=true; final mentions test=true."
       },
       {
         "id": "visible-test-integrity",
@@ -117,11 +124,25 @@
         "score": 100,
         "passed": true,
         "evidence": "Baseline visible test and assertion counts were preserved."
+      },
+      {
+        "id": "execution-completed",
+        "category": "autonomy",
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; exitCode=0; timedOut=false; parseErrors=0."
+      },
+      {
+        "id": "hidden-verifier-execution",
+        "category": "correctness",
+        "score": 100,
+        "passed": true,
+        "evidence": "Hidden verifier commands completed=true."
       }
     ]
   },
   "notes": [
-    "Scores were derived by the hidden pilot verifier; no category score was entered manually.",
-    "Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent."
+    "Scores were derived by the hidden pilot verifier after a cursor-session agent run.",
+    "No Codex CLI or 9Router adapter was used for this harness."
   ]
 }

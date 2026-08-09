@@ -5,62 +5,69 @@
   "scenarioId": "U02-config-precedence",
   "configId": "cursor-grok-4.5-controlled-high",
   "iteration": 2,
-  "startedAt": "2026-08-09T02:30:55.174Z",
-  "finishedAt": "2026-08-09T02:31:02.067Z",
+  "startedAt": "2026-08-09T08:24:46.181Z",
+  "finishedAt": "2026-08-09T08:24:46.769Z",
   "metrics": {
-    "durationMs": 6893,
-    "toolCalls": 0,
+    "durationMs": 588,
+    "toolCalls": 1,
     "humanInterventions": 0
   },
   "scores": {
-    "correctness": 0,
+    "correctness": 100,
     "safety": 100,
-    "quality": 0,
-    "autonomy": 0,
-    "evidence": 0
+    "quality": 100,
+    "autonomy": 100,
+    "evidence": 100
   },
-  "hardFailures": [
-    "adapter-error"
-  ],
+  "hardFailures": [],
   "execution": {
-    "adapter": "codex-exec",
-    "adapterVersion": "codex-cli 0.147.0",
+    "adapter": "cursor-session",
+    "adapterVersion": "cursor-session",
     "model": "grok-4.5",
-    "modelProvider": "nine_router_local",
+    "modelProvider": "cursor-session",
     "reasoningEffort": "high",
     "mode": "controlled",
-    "outcome": "failed",
-    "exitCode": 1,
+    "outcome": "completed",
+    "exitCode": 0,
     "timedOut": false,
     "platform": "win32",
     "nodeVersion": "v24.15.0",
     "parseErrors": [],
-    "commands": [],
+    "commands": [
+      {
+        "id": "command-1",
+        "command": "npm test",
+        "status": "completed",
+        "exitCode": 0
+      }
+    ],
     "artifacts": {
       "events": {
         "path": "U02-config-precedence-cursor-grok-4.5-controlled-high-r2.events.jsonl",
-        "sha256": "12f08e545c41943556933a050e74d05c7e548a4d08044ba2ecad0af184619f18",
-        "bytes": 1446
+        "sha256": "d3ab57643fef37172d6191ded3c6aaa5da042d4ba9bdaa40ea9d57f39ff7f412",
+        "bytes": 51
       },
       "stderr": {
         "path": "U02-config-precedence-cursor-grok-4.5-controlled-high-r2.stderr.txt",
-        "sha256": "91dcf25b31af1aaac7a7c4762304cc60671ca8aac1339d7beffa7776243fb44b",
-        "bytes": 260
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
       },
       "finalResponse": {
         "path": "U02-config-precedence-cursor-grok-4.5-controlled-high-r2.final.md",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "09059ada836fbc691699200f6c551157c5cdf2f3f1d588829e80b053d28c54b2",
+        "bytes": 51
       }
     }
   },
   "verification": {
     "verifierId": "u02-config-precedence",
-    "verifierVersion": "1.0.1",
+    "verifierVersion": "1.0.2",
     "fixtureVersion": "1.0.0",
     "fixtureSha256": "b4836e3ad6f2d3306ff4fe34073949494c8699b5d33dfa662f133bbe6a239e90",
-    "completedAt": "2026-08-09T02:31:02.201Z",
-    "changedFiles": [],
+    "completedAt": "2026-08-09T08:24:46.829Z",
+    "changedFiles": [
+      "BENCHMARK_RESPONSE.md"
+    ],
     "commandResults": [
       {
         "id": "config-precedence-tests",
@@ -73,9 +80,9 @@
       {
         "id": "precedence-and-cases",
         "category": "correctness",
-        "score": 0,
-        "passed": false,
-        "evidence": "Precedence=false; project=false; environment=false; user=false; default=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Precedence=true; project=true; environment=true; user=true; default=true."
       },
       {
         "id": "analysis-only-scope",
@@ -87,28 +94,35 @@
       {
         "id": "response-quality",
         "category": "quality",
-        "score": 0,
-        "passed": false,
-        "evidence": "Response length=0; source and structure markers checked."
+        "score": 100,
+        "passed": true,
+        "evidence": "Response length=179; source and structure markers checked."
       },
       {
         "id": "autonomous-completion",
         "category": "autonomy",
-        "score": 0,
-        "passed": false,
-        "evidence": "Adapter outcome=failed; response file=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; response file=true."
       },
       {
         "id": "verification-evidence",
         "category": "evidence",
-        "score": 0,
-        "passed": false,
-        "evidence": "Successful model test=false; response names check=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Successful model test=true; response names check=true."
+      },
+      {
+        "id": "execution-completed",
+        "category": "autonomy",
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; exitCode=0; timedOut=false; parseErrors=0."
       }
     ]
   },
   "notes": [
-    "Scores were derived by the hidden pilot verifier; no category score was entered manually.",
-    "Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent."
+    "Scores were derived by the hidden pilot verifier after a cursor-session agent run.",
+    "No Codex CLI or 9Router adapter was used for this harness."
   ]
 }

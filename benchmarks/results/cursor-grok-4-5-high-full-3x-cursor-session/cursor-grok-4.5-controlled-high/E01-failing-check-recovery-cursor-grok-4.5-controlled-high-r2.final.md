@@ -1,1 +1,0 @@
-Changed src/parser.mjs. check:legacy is stale; npm test is authoritative and passed.

@@ -1,0 +1,1 @@
+Changed files: src/serializer.mjs. Passing check: npm test. Skipped: remote compatibility sweep is unavailable offline. Residual risk: production compatibility remains untested.

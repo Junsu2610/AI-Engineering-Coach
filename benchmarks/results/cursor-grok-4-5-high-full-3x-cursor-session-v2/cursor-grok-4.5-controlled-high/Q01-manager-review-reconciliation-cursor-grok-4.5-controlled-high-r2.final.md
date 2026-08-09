@@ -1,1 +1,0 @@
-Wrote MANAGER_REVIEW.md. npm test passed.

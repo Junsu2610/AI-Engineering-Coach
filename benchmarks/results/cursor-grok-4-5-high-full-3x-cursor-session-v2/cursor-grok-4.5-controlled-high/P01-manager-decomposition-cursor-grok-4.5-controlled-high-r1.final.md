@@ -1,1 +1,0 @@
-Wrote MANAGER_PLAN.md. npm test passed.

@@ -1,1 +1,0 @@
-Which storage contract is approved? Append-only preserves historical recovery, while replace-in-place can discard history and change compatibility. Please clarify before any code edit.

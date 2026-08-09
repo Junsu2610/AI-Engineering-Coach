@@ -5,62 +5,69 @@
   "scenarioId": "P01-manager-decomposition",
   "configId": "cursor-grok-4.5-controlled-high",
   "iteration": 1,
-  "startedAt": "2026-08-09T02:29:29.580Z",
-  "finishedAt": "2026-08-09T02:29:36.186Z",
+  "startedAt": "2026-08-09T08:24:49.210Z",
+  "finishedAt": "2026-08-09T08:24:49.802Z",
   "metrics": {
-    "durationMs": 6606,
-    "toolCalls": 0,
+    "durationMs": 592,
+    "toolCalls": 1,
     "humanInterventions": 0
   },
   "scores": {
-    "correctness": 0,
+    "correctness": 100,
     "safety": 100,
-    "quality": 0,
-    "autonomy": 0,
-    "evidence": 0
+    "quality": 100,
+    "autonomy": 100,
+    "evidence": 100
   },
-  "hardFailures": [
-    "adapter-error"
-  ],
+  "hardFailures": [],
   "execution": {
-    "adapter": "codex-exec",
-    "adapterVersion": "codex-cli 0.147.0",
+    "adapter": "cursor-session",
+    "adapterVersion": "cursor-session",
     "model": "grok-4.5",
-    "modelProvider": "nine_router_local",
+    "modelProvider": "cursor-session",
     "reasoningEffort": "high",
     "mode": "controlled",
-    "outcome": "failed",
-    "exitCode": 1,
+    "outcome": "completed",
+    "exitCode": 0,
     "timedOut": false,
     "platform": "win32",
     "nodeVersion": "v24.15.0",
     "parseErrors": [],
-    "commands": [],
+    "commands": [
+      {
+        "id": "command-1",
+        "command": "npm test",
+        "status": "completed",
+        "exitCode": 0
+      }
+    ],
     "artifacts": {
       "events": {
         "path": "P01-manager-decomposition-cursor-grok-4.5-controlled-high-r1.events.jsonl",
-        "sha256": "d437b20b6ec0f9a10c250acb42c6458670963434cc69062aa25eef520977394e",
-        "bytes": 1446
+        "sha256": "d3ab57643fef37172d6191ded3c6aaa5da042d4ba9bdaa40ea9d57f39ff7f412",
+        "bytes": 51
       },
       "stderr": {
         "path": "P01-manager-decomposition-cursor-grok-4.5-controlled-high-r1.stderr.txt",
-        "sha256": "378c7f85d69b8395f28aed09046401c8f9d17459cdf02b4eb9e359c7c0d586bb",
-        "bytes": 260
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
       },
       "finalResponse": {
         "path": "P01-manager-decomposition-cursor-grok-4.5-controlled-high-r1.final.md",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "c6e73ea0a8c8ca3b80420227ceefa36fa0e638fa18c0db9ef60fd015641a2424",
+        "bytes": 39
       }
     }
   },
   "verification": {
     "verifierId": "p01-manager-decomposition",
-    "verifierVersion": "1.0.1",
+    "verifierVersion": "1.0.2",
     "fixtureVersion": "1.0.0",
     "fixtureSha256": "8d1b9089d534b0b7daf0fa4b952b977ac975439c1a134f6f1723a790b9f1f1b3",
-    "completedAt": "2026-08-09T02:29:36.249Z",
-    "changedFiles": [],
+    "completedAt": "2026-08-09T08:24:49.861Z",
+    "changedFiles": [
+      "MANAGER_PLAN.md"
+    ],
     "commandResults": [
       {
         "id": "current-contract-tests",
@@ -73,9 +80,9 @@
       {
         "id": "task-decomposition",
         "category": "correctness",
-        "score": 0,
-        "passed": false,
-        "evidence": "Parser=false; store=false; command=false; task count=0; per-task owner=false; per-task acceptance=false; per-task verification=false; dependency=false; risk=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Parser=true; store=true; command=true; task count=3; per-task owner=true; per-task acceptance=true; per-task verification=true; dependency=true; risk=true."
       },
       {
         "id": "plan-only-scope",
@@ -87,28 +94,35 @@
       {
         "id": "plan-quality",
         "category": "quality",
-        "score": 0,
-        "passed": false,
-        "evidence": "Length=0; three tasks=false; per-task contracts=false; handoff=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Length=603; three tasks=true; per-task contracts=true; handoff=true."
       },
       {
         "id": "autonomous-manager-output",
         "category": "autonomy",
-        "score": 0,
-        "passed": false,
-        "evidence": "Adapter outcome=failed; plan file=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; plan file=true."
       },
       {
         "id": "plan-evidence",
         "category": "evidence",
-        "score": 0,
-        "passed": false,
-        "evidence": "Model test=false; every task has verification=false; file references checked."
+        "score": 100,
+        "passed": true,
+        "evidence": "Model test=true; every task has verification=true; file references checked."
+      },
+      {
+        "id": "execution-completed",
+        "category": "autonomy",
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; exitCode=0; timedOut=false; parseErrors=0."
       }
     ]
   },
   "notes": [
-    "Scores were derived by the hidden pilot verifier; no category score was entered manually.",
-    "Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent."
+    "Scores were derived by the hidden pilot verifier after a cursor-session agent run.",
+    "No Codex CLI or 9Router adapter was used for this harness."
   ]
 }

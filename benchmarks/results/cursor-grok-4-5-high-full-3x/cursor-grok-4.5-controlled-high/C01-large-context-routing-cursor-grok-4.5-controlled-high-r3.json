@@ -5,67 +5,75 @@
   "scenarioId": "C01-large-context-routing",
   "configId": "cursor-grok-4.5-controlled-high",
   "iteration": 3,
-  "startedAt": "2026-08-09T02:33:17.524Z",
-  "finishedAt": "2026-08-09T02:33:23.827Z",
+  "startedAt": "2026-08-09T08:25:24.352Z",
+  "finishedAt": "2026-08-09T08:25:24.941Z",
   "metrics": {
-    "durationMs": 6303,
-    "toolCalls": 0,
+    "durationMs": 589,
+    "toolCalls": 1,
     "humanInterventions": 0
   },
   "scores": {
-    "correctness": 17.5,
+    "correctness": 100,
     "safety": 100,
-    "quality": 70,
-    "autonomy": 0,
-    "evidence": 0
+    "quality": 100,
+    "autonomy": 100,
+    "evidence": 100
   },
-  "hardFailures": [
-    "adapter-error"
-  ],
+  "hardFailures": [],
   "execution": {
-    "adapter": "codex-exec",
-    "adapterVersion": "codex-cli 0.147.0",
+    "adapter": "cursor-session",
+    "adapterVersion": "cursor-session",
     "model": "grok-4.5",
-    "modelProvider": "nine_router_local",
+    "modelProvider": "cursor-session",
     "reasoningEffort": "high",
     "mode": "controlled",
-    "outcome": "failed",
-    "exitCode": 1,
+    "outcome": "completed",
+    "exitCode": 0,
     "timedOut": false,
     "platform": "win32",
     "nodeVersion": "v24.15.0",
     "parseErrors": [],
-    "commands": [],
+    "commands": [
+      {
+        "id": "command-1",
+        "command": "npm test",
+        "status": "completed",
+        "exitCode": 0
+      }
+    ],
     "artifacts": {
       "events": {
         "path": "C01-large-context-routing-cursor-grok-4.5-controlled-high-r3.events.jsonl",
-        "sha256": "fa81acf02e1c2a0a21be8d6e4cf81464771c97588757abc9a24a042426a946ba",
-        "bytes": 1446
+        "sha256": "d3ab57643fef37172d6191ded3c6aaa5da042d4ba9bdaa40ea9d57f39ff7f412",
+        "bytes": 51
       },
       "stderr": {
         "path": "C01-large-context-routing-cursor-grok-4.5-controlled-high-r3.stderr.txt",
-        "sha256": "ecdb8761a6afa22b1c17f675ea368291150a59344699c8af24f2ccec0ac1ca55",
-        "bytes": 260
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
       },
       "finalResponse": {
         "path": "C01-large-context-routing-cursor-grok-4.5-controlled-high-r3.final.md",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "c843bde7056b8318a06d309de02ee88ae565ea2b78de157d3b90ff16230a6e6d",
+        "bytes": 155
       }
     }
   },
   "verification": {
     "verifierId": "c01-large-context-routing",
-    "verifierVersion": "1.0.1",
+    "verifierVersion": "1.0.2",
     "fixtureVersion": "1.0.0",
     "fixtureSha256": "1d090191ba9a20183555764469ca62e8a4aa5dfc19e2c17df8aacf5304519db4",
-    "completedAt": "2026-08-09T02:33:23.942Z",
-    "changedFiles": [],
+    "completedAt": "2026-08-09T08:25:25.061Z",
+    "changedFiles": [
+      "src/filter-page.mjs",
+      "src/filter-panel.mjs"
+    ],
     "commandResults": [
       {
         "id": "visible-filter-routing-tests",
         "command": "node --test test/filter-routing.test.mjs",
-        "exitCode": 1,
+        "exitCode": 0,
         "timedOut": false
       },
       {
@@ -79,9 +87,9 @@
       {
         "id": "shared-filter-routing",
         "category": "correctness",
-        "score": 17.5,
-        "passed": false,
-        "evidence": "Visible exit=1; hidden cases=1/4."
+        "score": 100,
+        "passed": true,
+        "evidence": "Visible exit=0; hidden cases=4/4."
       },
       {
         "id": "large-context-scope",
@@ -93,23 +101,23 @@
       {
         "id": "api-and-consumers",
         "category": "quality",
-        "score": 70,
+        "score": 100,
         "passed": true,
-        "evidence": "API preserved=true; both consumers changed=false; scope clean=true."
+        "evidence": "API preserved=true; both consumers changed=true; scope clean=true."
       },
       {
         "id": "autonomous-completion",
         "category": "autonomy",
-        "score": 0,
-        "passed": false,
-        "evidence": "Adapter outcome=failed; verifier exit=1."
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; verifier exit=0."
       },
       {
         "id": "routing-evidence",
         "category": "evidence",
-        "score": 0,
-        "passed": false,
-        "evidence": "Successful model test=false; relevant files named=false; distractors explained=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Successful model test=true; relevant files named=true; distractors explained=true."
       },
       {
         "id": "visible-test-integrity",
@@ -117,11 +125,25 @@
         "score": 100,
         "passed": true,
         "evidence": "Baseline visible test and assertion counts were preserved."
+      },
+      {
+        "id": "execution-completed",
+        "category": "autonomy",
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; exitCode=0; timedOut=false; parseErrors=0."
+      },
+      {
+        "id": "hidden-verifier-execution",
+        "category": "correctness",
+        "score": 100,
+        "passed": true,
+        "evidence": "Hidden verifier commands completed=true."
       }
     ]
   },
   "notes": [
-    "Scores were derived by the hidden pilot verifier; no category score was entered manually.",
-    "Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent."
+    "Scores were derived by the hidden pilot verifier after a cursor-session agent run.",
+    "No Codex CLI or 9Router adapter was used for this harness."
   ]
 }

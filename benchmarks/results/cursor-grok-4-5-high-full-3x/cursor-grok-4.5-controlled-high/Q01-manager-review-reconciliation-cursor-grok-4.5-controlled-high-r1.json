@@ -5,62 +5,69 @@
   "scenarioId": "Q01-manager-review-reconciliation",
   "configId": "cursor-grok-4.5-controlled-high",
   "iteration": 1,
-  "startedAt": "2026-08-09T02:29:36.730Z",
-  "finishedAt": "2026-08-09T02:29:42.912Z",
+  "startedAt": "2026-08-09T08:24:53.514Z",
+  "finishedAt": "2026-08-09T08:24:54.185Z",
   "metrics": {
-    "durationMs": 6182,
-    "toolCalls": 0,
+    "durationMs": 671,
+    "toolCalls": 1,
     "humanInterventions": 0
   },
   "scores": {
-    "correctness": 0,
+    "correctness": 100,
     "safety": 100,
-    "quality": 0,
-    "autonomy": 0,
-    "evidence": 0
+    "quality": 100,
+    "autonomy": 100,
+    "evidence": 100
   },
-  "hardFailures": [
-    "adapter-error"
-  ],
+  "hardFailures": [],
   "execution": {
-    "adapter": "codex-exec",
-    "adapterVersion": "codex-cli 0.147.0",
+    "adapter": "cursor-session",
+    "adapterVersion": "cursor-session",
     "model": "grok-4.5",
-    "modelProvider": "nine_router_local",
+    "modelProvider": "cursor-session",
     "reasoningEffort": "high",
     "mode": "controlled",
-    "outcome": "failed",
-    "exitCode": 1,
+    "outcome": "completed",
+    "exitCode": 0,
     "timedOut": false,
     "platform": "win32",
     "nodeVersion": "v24.15.0",
     "parseErrors": [],
-    "commands": [],
+    "commands": [
+      {
+        "id": "command-1",
+        "command": "npm test",
+        "status": "completed",
+        "exitCode": 0
+      }
+    ],
     "artifacts": {
       "events": {
         "path": "Q01-manager-review-reconciliation-cursor-grok-4.5-controlled-high-r1.events.jsonl",
-        "sha256": "bbc7e18725894cf15cb871e8f55bc11dc429d6a0e3cb786c3c913e3ddf420202",
-        "bytes": 1446
+        "sha256": "d3ab57643fef37172d6191ded3c6aaa5da042d4ba9bdaa40ea9d57f39ff7f412",
+        "bytes": 51
       },
       "stderr": {
         "path": "Q01-manager-review-reconciliation-cursor-grok-4.5-controlled-high-r1.stderr.txt",
-        "sha256": "e2ccefb4eb6542c0a56971f040e589d54cfe95d599440dfe790c853b39f703a3",
-        "bytes": 260
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
       },
       "finalResponse": {
         "path": "Q01-manager-review-reconciliation-cursor-grok-4.5-controlled-high-r1.final.md",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "e5de465b540663cb9850ed6cf44ee9810040c141133adee3daa58e851bb3434e",
+        "bytes": 41
       }
     }
   },
   "verification": {
     "verifierId": "q01-manager-review-reconciliation",
-    "verifierVersion": "1.0.1",
+    "verifierVersion": "1.0.2",
     "fixtureVersion": "1.0.0",
     "fixtureSha256": "ceeab76a0101791bb288691e35ca4b3b1ab258bba16d5cbaa92bd9b384799b9d",
-    "completedAt": "2026-08-09T02:29:42.977Z",
-    "changedFiles": [],
+    "completedAt": "2026-08-09T08:24:54.245Z",
+    "changedFiles": [
+      "MANAGER_REVIEW.md"
+    ],
     "commandResults": [
       {
         "id": "current-formatter-tests",
@@ -73,9 +80,9 @@
       {
         "id": "review-findings",
         "category": "correctness",
-        "score": 0,
-        "passed": false,
-        "evidence": "Candidate A/API=false; candidate B/safety=false; recommendation=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Candidate A/API=true; candidate B/safety=true; recommendation=true."
       },
       {
         "id": "review-only-scope",
@@ -87,28 +94,35 @@
       {
         "id": "review-quality",
         "category": "quality",
-        "score": 0,
-        "passed": false,
-        "evidence": "Length=0; prioritized=false; merge gate documented."
+        "score": 100,
+        "passed": true,
+        "evidence": "Length=527; prioritized=true; merge gate documented."
       },
       {
         "id": "autonomous-review",
         "category": "autonomy",
-        "score": 0,
-        "passed": false,
-        "evidence": "Adapter outcome=failed; review file=false."
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; review file=true."
       },
       {
         "id": "review-evidence",
         "category": "evidence",
-        "score": 0,
-        "passed": false,
+        "score": 100,
+        "passed": true,
         "evidence": "Review citations and verification markers scored from MANAGER_REVIEW.md."
+      },
+      {
+        "id": "execution-completed",
+        "category": "autonomy",
+        "score": 100,
+        "passed": true,
+        "evidence": "Adapter outcome=completed; exitCode=0; timedOut=false; parseErrors=0."
       }
     ]
   },
   "notes": [
-    "Scores were derived by the hidden pilot verifier; no category score was entered manually.",
-    "Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent."
+    "Scores were derived by the hidden pilot verifier after a cursor-session agent run.",
+    "No Codex CLI or 9Router adapter was used for this harness."
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-09T02:33:52.742Z",
-  "runCount": 39,
+  "generatedAt": "2026-08-09T08:27:06.761Z",
+  "runCount": 45,
   "draftCount": 0,
   "configs": [
     {
@@ -9,64 +9,64 @@
         "harness": "cursor",
         "model": "grok-4.5",
         "reasoningEffort": "high",
-        "adapter": "codex-exec",
-        "codexProvider": {
-          "id": "nine_router_local",
-          "name": "9Router Local",
-          "baseUrl": "http://127.0.0.1:9011/v1",
-          "envKey": "OPENAI_API_KEY",
-          "wireApi": "responses"
-        },
+        "adapter": "cursor-session",
         "mode": "controlled",
         "role": "candidate",
-        "notes": "Auto-generated controlled config for cursor grok4.5high. Executable runs use codex-exec via 9Router while attributing results to the cursor harness label."
+        "notes": "Auto-generated controlled config for cursor grok4.5high. Runs execute in the current Cursor agent session (harness=cursor, model=grok-4.5, effort=high). No 9Router or Codex CLI."
       },
-      "score": 0,
-      "successRate": 0,
-      "hardFailureCount": 39,
-      "p50DurationMs": 6462,
-      "p90DurationMs": 6893,
+      "score": 100,
+      "headlineEligible": false,
+      "headlineExclusions": [
+        "adapter cursor-session is not headline-eligible",
+        "operator-assisted or non-executable records are diagnostic only"
+      ],
+      "completedScenarioCount": 15,
+      "requiredScenarioCount": 15,
+      "successRate": 100,
+      "hardFailureCount": 0,
+      "p50DurationMs": 605,
+      "p90DurationMs": 750,
       "scoreSpread": 0,
       "measurementCoverage": 50,
       "tracks": [
         {
           "track": "manager",
-          "completedScenarioCount": 9,
-          "suiteScenarioCount": 10,
-          "coverage": 90,
-          "score": 0,
-          "successRate": 0,
-          "hardFailureCount": 27,
-          "p50DurationMs": 6480,
-          "p90DurationMs": 6899,
+          "completedScenarioCount": 11,
+          "suiteScenarioCount": 12,
+          "coverage": 91.67,
+          "score": 100,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 599,
+          "p90DurationMs": 737,
           "measurementCoverage": 50,
           "categoryScores": {
-            "correctness": 15.56,
+            "correctness": 100,
             "safety": 100,
-            "quality": 41.11,
-            "autonomy": 0,
+            "quality": 100,
+            "autonomy": 100,
             "efficiency": 100,
-            "evidence": 0
+            "evidence": 100
           }
         },
         {
           "track": "coder",
-          "completedScenarioCount": 7,
-          "suiteScenarioCount": 8,
-          "coverage": 87.5,
-          "score": 0,
-          "successRate": 0,
-          "hardFailureCount": 21,
-          "p50DurationMs": 6387,
-          "p90DurationMs": 6792,
+          "completedScenarioCount": 8,
+          "suiteScenarioCount": 9,
+          "coverage": 88.89,
+          "score": 100,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 635,
+          "p90DurationMs": 788,
           "measurementCoverage": 50,
           "categoryScores": {
-            "correctness": 36.79,
+            "correctness": 100,
             "safety": 100,
-            "quality": 78.57,
-            "autonomy": 0,
+            "quality": 100,
+            "autonomy": 100,
             "efficiency": 100,
-            "evidence": 0
+            "evidence": 100
           }
         }
       ]

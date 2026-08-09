@@ -1,1 +1,0 @@
-Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected (2.02 vs 2.01).
