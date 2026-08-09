@@ -1,0 +1,4 @@
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "C:\\Users\\ptd26\\AppData\\Local\\Temp\\" (codex_home: AbsolutePathBuf("C:\\Users\\ptd26\\AppData\\Local\\Temp\\aic-codex-home-SLiqZG"))
+2026-08-09T09:12:53.897880Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-08-09T09:13:14.949336Z ERROR codex_core::tools::router: error=request_user_input is unavailable in Default mode
+2026-08-09T09:13:14.956072Z ERROR codex_core::tools::router: error=request_user_input is unavailable in Default mode

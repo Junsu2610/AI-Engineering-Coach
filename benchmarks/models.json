@@ -65,6 +65,22 @@
       "updatedAt": "2026-08-09T03:25:51.840Z",
       "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark codex runs.",
       "executionMode": "codex-exec"
+    },
+    {
+      "alias": "codex gpt-5.6-sol-high",
+      "harness": "codex",
+      "modelEffort": "gpt-5.6-sol-high",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "high",
+      "configId": "codex-gpt-5.6-sol-controlled-high",
+      "adapter": "codex-exec",
+      "executionMode": "codex-exec",
+      "executableHarness": "codex-cli",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.codex-gpt-5-6-sol-high.json",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark codex runs.",
+      "updatedAt": "2026-08-09T08:41:28.836Z"
     }
   ]
 }

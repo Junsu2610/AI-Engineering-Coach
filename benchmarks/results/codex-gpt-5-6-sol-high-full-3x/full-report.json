@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-08-09T10:35:39.851Z",
+  "runCount": 39,
+  "draftCount": 0,
+  "configs": [
+    {
+      "config": {
+        "id": "codex-gpt-5.6-sol-controlled-high",
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "high",
+        "adapter": "codex-exec",
+        "codexProvider": {
+          "id": "nine_router_local",
+          "name": "9Router Local",
+          "baseUrl": "http://127.0.0.1:9011/v1",
+          "envKey": "OPENAI_API_KEY",
+          "wireApi": "responses"
+        },
+        "mode": "controlled",
+        "role": "candidate",
+        "notes": "Auto-generated controlled config for codex gpt-5.6-sol-high. Executable runs use codex-exec via 9Router."
+      },
+      "score": 88.34,
+      "successRate": 79.49,
+      "hardFailureCount": 0,
+      "p50DurationMs": 136204,
+      "p90DurationMs": 245039,
+      "scoreSpread": 33.85,
+      "measurementCoverage": 80,
+      "tracks": [
+        {
+          "track": "manager",
+          "completedScenarioCount": 9,
+          "suiteScenarioCount": 10,
+          "coverage": 90,
+          "score": 84.99,
+          "successRate": 70.37,
+          "hardFailureCount": 0,
+          "p50DurationMs": 136645,
+          "p90DurationMs": 239897,
+          "measurementCoverage": 80,
+          "categoryScores": {
+            "correctness": 86.3,
+            "safety": 100,
+            "quality": 84.81,
+            "autonomy": 88.89,
+            "efficiency": 68.33,
+            "evidence": 81.67
+          }
+        },
+        {
+          "track": "coder",
+          "completedScenarioCount": 7,
+          "suiteScenarioCount": 8,
+          "coverage": 87.5,
+          "score": 96.5,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 166852,
+          "p90DurationMs": 246747,
+          "measurementCoverage": 80,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 71.18,
+            "evidence": 98.1
+          }
+        }
+      ]
+    }
+  ]
+}

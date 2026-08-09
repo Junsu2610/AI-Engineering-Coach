@@ -1,0 +1,42 @@
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "C:\\Users\\ptd26\\AppData\\Local\\Temp\\" (codex_home: AbsolutePathBuf("C:\\Users\\ptd26\\AppData\\Local\\Temp\\aic-codex-home-8DbLhI"))
+2026-08-09T08:49:12.065458Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-08-09T08:49:39.001568Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.5 seconds
+Output:
+
+> test
+> node --test --test-isolation=none test/latest-task.test.mjs
+
+✖ ignores stale work that finishes after a newer request starts (1.7215ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9.7874
+
+✖ failing tests:
+
+test at test\latest-task.test.mjs:14:1
+✖ ignores stale work that finishes after a newer request starts (1.7215ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'stale',
+      'latest'
+    ]
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-qVQVsn/workspace%20with%20spaces/test/latest-task.test.mjs:26:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+

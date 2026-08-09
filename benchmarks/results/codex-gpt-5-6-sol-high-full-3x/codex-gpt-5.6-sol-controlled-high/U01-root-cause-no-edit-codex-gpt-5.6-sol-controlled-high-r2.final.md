@@ -1,0 +1,3 @@
+Identified and documented the root cause in [BENCHMARK_RESPONSE.md](<C:\Users\ptd26\AppData\Local\Temp\aic-agent-benchmark-3q1pwO\workspace with spaces\BENCHMARK_RESPONSE.md>).
+
+The defect is premature per-item currency rounding in `src/checkout-total.mjs`; fractional cents must be preserved until the final total is rounded. The test still reproduces the documented failure (`2.02` vs `2.01`). No source or test files were modified.

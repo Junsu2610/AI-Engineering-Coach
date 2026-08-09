@@ -1,0 +1,62 @@
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "C:\\Users\\ptd26\\AppData\\Local\\Temp\\" (codex_home: AbsolutePathBuf("C:\\Users\\ptd26\\AppData\\Local\\Temp\\aic-codex-home-Vb2mth"))
+2026-08-09T08:56:38.358577Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-08-09T08:58:45.244544Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.6 seconds
+Output:
+
+> test
+> node --test --test-isolation=none test/filter-routing.test.mjs
+
+✖ routes the shared filter state to both consumers (0.835ms)
+✖ does not use a similarly named legacy state branch (0.1386ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9.6914
+
+✖ failing tests:
+
+test at test\filter-routing.test.mjs:8:1
+✖ routes the shared filter state to both consumers (0.835ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'open'
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-wOjVQg/workspace%20with%20spaces/test/filter-routing.test.mjs:10:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'open',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\filter-routing.test.mjs:14:1
+✖ does not use a similarly named legacy state branch (0.1386ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'right'
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-wOjVQg/workspace%20with%20spaces/test/filter-routing.test.mjs:16:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'right',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+

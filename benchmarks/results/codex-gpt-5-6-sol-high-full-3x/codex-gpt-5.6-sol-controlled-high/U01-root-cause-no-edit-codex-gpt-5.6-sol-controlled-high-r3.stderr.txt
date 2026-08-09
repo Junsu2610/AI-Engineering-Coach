@@ -1,0 +1,40 @@
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "C:\\Users\\ptd26\\AppData\\Local\\Temp\\" (codex_home: AbsolutePathBuf("C:\\Users\\ptd26\\AppData\\Local\\Temp\\aic-codex-home-9ua7q0"))
+2026-08-09T09:42:13.169009Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-08-09T09:42:37.956456Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.5 seconds
+Output:
+
+> test
+> node --test --test-isolation=none test/checkout-total.test.mjs
+
+✖ preserves fractional cents until the final total is rounded (0.7858ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9.1606
+
+✖ failing tests:
+
+test at test\checkout-total.test.mjs:6:1
+✖ preserves fractional cents until the final total is rounded (0.7858ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2.02 !== 2.01
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-U9K7Bi/workspace%20with%20spaces/test/checkout-total.test.mjs:11:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2.02,
+    expected: 2.01,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
