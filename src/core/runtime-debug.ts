@@ -8,7 +8,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const DEBUG_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.copilot-analytics-cache');
+const DEBUG_DIR = process.env.AI_ENGINEER_COACH_CACHE_DIR ||
+  path.join(process.env.HOME || process.env.USERPROFILE || '', '.copilot-analytics-cache');
 const DEBUG_LOG_FILE = path.join(DEBUG_DIR, 'runtime.log');
 const HOOK_FLAG = '__aiEngineerCoachRuntimeHooksInstalled';
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB

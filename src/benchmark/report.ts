@@ -32,6 +32,7 @@ function configRow(summary: ConfigSummary): string {
     escapeCell(summary.config.model),
     summary.config.mode,
     summary.score.toFixed(2),
+    summary.headlineEligible ? 'yes' : 'no',
     `${summary.successRate.toFixed(1)}%`,
     String(summary.hardFailureCount),
     formatDuration(summary.p50DurationMs),
@@ -65,6 +66,11 @@ function trackRow(configId: string, summary: TrackSummary): string {
 
 export function renderBenchmarkReport(summary: BenchmarkSummary): string {
   const rows = summary.configs.map(configRow).join('\n');
+  const headlineRows = summary.configs.map(config => (
+    `- ${escapeCell(config.config.id)}: ${config.headlineEligible
+      ? `eligible (${config.completedScenarioCount}/${config.requiredScenarioCount} executable scenarios)`
+      : `diagnostic only - ${config.headlineExclusions.join('; ')}`}`
+  )).join('\n');
   const coverageRows = summary.configs.map(config => [
     escapeCell(config.config.id),
     `${config.measurementCoverage.toFixed(0)}%`,
@@ -79,9 +85,13 @@ Generated: ${summary.generatedAt}
 
 ## Scorecard
 
-Config | Harness | Model | Mode | Score | Success | Hard failures | p50 time | p90 time | Cost / accepted task | Model baseline | Harness uplift | Native score
---- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:
+Config | Harness | Model | Mode | Score | Headline | Success | Hard failures | p50 time | p90 time | Cost / accepted task | Model baseline | Harness uplift | Native score
+--- | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:
 ${rows}
+
+## Headline Eligibility
+
+${headlineRows}
 
 ## Manager and Coder Scenario Tracks
 
@@ -102,6 +112,7 @@ ${coverageRows}
 - Model baseline is the controlled neutral-runner score for the same model.
 - Harness uplift is the paired scenario difference from that model baseline.
 - Native score uses the harness with its normal memory, skills, and workflow features enabled.
+- A score marked Headline: no is diagnostic only and cannot populate baseline, uplift, or native headline fields.
 - A hard failure forces the affected run score to zero regardless of its raw score.
 `;
 }

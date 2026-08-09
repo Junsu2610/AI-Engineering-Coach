@@ -4,7 +4,7 @@
   "lane": "shared",
   "version": "0.1.0",
   "verifier": "sh10-runtime-boundary",
-  "status": "stub",
+  "status": "registered",
   "allowedChanges": [
     "source/shared-config.mjs",
     "source/service-gateway.mjs",

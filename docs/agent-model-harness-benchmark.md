@@ -21,19 +21,19 @@ If the same model cannot run in both configurations, report only the configurati
 
 ## Suite
 
-[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 14 scenarios covering:
+[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 16 scenarios covering:
 
 - repository understanding and diagnosis;
 - focused and asynchronous bug fixes;
 - a multi-file feature and behavior-preserving refactor;
 - large-context routing and failure recovery;
 - dirty working tree safety and missing authority;
-- evidence-backed reporting and checkpoint recovery.
-- manager task decomposition and coder-proposal review.
+- evidence-backed reporting and checkpoint recovery;
+- manager task decomposition, inbox triage, coder-proposal review, and source/runtime-boundary safety.
 
-The suite contains 10 Manager-track scenarios, 8 Coder-track scenarios, and 4 shared scenarios. The checked-in Codex adapter has executable hidden verifiers for 13 scenarios: 9 Manager-track and 7 Coder-track scenarios. `L01-checkpoint-resume` remains manual-only because a true resume test requires a harness interruption/resume adapter. Consequently, a complete automated run reports Manager coverage `9/10` and Coder coverage `7/8`; that manual gap is expected rather than a missing automated run.
+The suite contains 12 Manager-track scenarios, 9 Coder-track scenarios, and 5 shared scenarios. The checked-in Codex adapter has executable hidden verifiers for 15 scenarios: 11 Manager-track and 8 Coder-track scenarios. `L01-checkpoint-resume` remains manual-only because a true resume test requires a harness interruption/resume adapter. Consequently, a complete automated run reports Manager coverage `11/12` and Coder coverage `8/9`; that manual gap is expected rather than a missing automated run.
 
-Run each executable scenario three times for a headline result. Every automated scenario receives a fresh disposable repository copy. Randomize configuration order across harnesses, clear warm caches in controlled mode, and keep the initial prompt unchanged.
+Run each executable scenario three times for a headline result. Every automated scenario receives a fresh disposable repository copy. Randomize configuration order across harnesses, clear warm caches in controlled mode, and keep the initial prompt unchanged. A headline also requires unique scenario identities with meaningful multi-scenario coverage; one-off operator records are diagnostic only.
 
 The manual checkpoint kit is [`benchmarks/fixtures/L01-checkpoint-resume/README.md`](../benchmarks/fixtures/L01-checkpoint-resume/README.md). It keeps the oracle outside the harness-visible workspace and requires a real interrupt/resume event.
 
@@ -100,7 +100,7 @@ After all scenarios are verified, aggregate:
 npm run benchmark:agents -- full --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --track all --iterations 3 --results benchmarks/results/cursor-grok-4-5-high-full-3x
 ```
 
-`full` for cursor-session configs only reuses completed schemaVersion 2 runs and builds the report; it does not invoke Codex.
+`full` for cursor-session configs only reuses completed schemaVersion 2 runs and builds a diagnostic report; it does not invoke Codex. Because command evidence is supplied by the active operator session, cursor-session results are operator-assisted and are not eligible for a controlled headline.
 
 ### Codex harness (`executionMode: codex-exec`)
 
@@ -216,7 +216,7 @@ Each harness adapter produces one JSON run record with:
 - zero or more hard-failure codes;
 - `status: "completed"` only after the verifier finishes.
 
-Executable pilot records use `schemaVersion: 2`. Their category scores are derived from hidden verifier checks, not entered by the operator. The verifier snapshots raw bytes before and after the model run, preserves baseline visible-test counts, checks dirty-file Git status, checks the allowlisted fixture contract, records explicit verification command exit codes, rejects obvious exit masking, and forces a zero score for scope, weakened tests, dirty-worktree, network, timeout, adapter, or secret failures.
+Executable pilot records use `schemaVersion: 2`. Their category scores are derived from hidden verifier checks, not entered by the operator. The verifier snapshots raw bytes before and after the model run, preserves baseline visible-test counts, checks dirty-file Git status, checks the allowlisted fixture contract, records explicit verification command exit codes, rejects fake or exit-masked test evidence, and forces a zero score unless the adapter itself completed with exit code 0 and every required verifier check passed. Reuse and headline aggregation re-check schema-2 artifact files, byte counts, SHA-256 hashes, execution outcome, and verifier checks; controlled headlines exclude schema-1 and operator-assisted records.
 
 Keep the task fixture and hidden oracle outside the harness-visible workspace. Record command exit codes independently and compare them with the final response before assigning the evidence score.
 

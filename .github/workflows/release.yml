@@ -36,23 +36,29 @@ jobs:
             exit 1
           fi
 
-      - name: Run build
-        run: npm run build
+      - name: Check release gates
+        run: npm run check
 
-      - name: Run tests
-        run: npm test
-
-      - name: Package VSIX
+      - name: Package fresh VSIX and build
         run: npm run package
 
-      - name: Capture VSIX path
+      - name: Smoke test packaged build
+        run: npm run smoke-test -- --skip-build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests against packaged build
+        run: npm run test:e2e:built
+
+      - name: Verify VSIX size, freshness, and contents
+        run: npm run check-size
+
+      - name: Capture exact VSIX path
         id: vsix
         run: |
-          VSIX_PATH="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
-          if [ -z "$VSIX_PATH" ]; then
-            echo "No VSIX package was produced"
-            exit 1
-          fi
+          VSIX_PATH="$(node -p "'./' + require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
+          test -f "$VSIX_PATH"
           echo "path=$VSIX_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release

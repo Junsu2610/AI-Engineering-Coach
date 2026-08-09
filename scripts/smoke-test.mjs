@@ -1,59 +1,70 @@
 #!/usr/bin/env node
 /**
- * Pre-publish smoke test: verifies the .vsix package is valid and the
- * extension can be loaded.
+ * Pre-publish smoke test for the generated extension bundle and manifest.
  */
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { existsSync, statSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const root = join(import.meta.dirname, '..');
+const skipBuild = process.argv.includes('--skip-build');
 
-// 1. Build
-console.log('Building extension...');
-execSync('npm run build', { cwd: root, stdio: 'inherit' });
+function fail(message) {
+  console.error(`FAIL: ${message}`);
+  process.exit(1);
+}
 
-// 2. Check dist exists
+if (skipBuild) {
+  console.log('Using existing extension build...');
+} else {
+  console.log('Building extension...');
+  execSync('npm run build', { cwd: root, stdio: 'inherit' });
+}
+
 const distPath = join(root, 'dist', 'extension.js');
 if (!existsSync(distPath)) {
-  console.error('❌ dist/extension.js not found');
-  process.exit(1);
+  fail('dist/extension.js not found');
 }
-console.log(`✅ dist/extension.js exists (${(statSync(distPath).size / 1024).toFixed(0)} KB)`);
 
-// 3. Verify the extension module can be required (basic syntax check)
+const bundle = readFileSync(distPath, 'utf8');
+console.log(`dist/extension.js exists (${(statSync(distPath).size / 1024).toFixed(0)} KB)`);
+
+// Syntax-checking does not execute the bundle or resolve its external vscode module.
 try {
-  const mod = await import(`file://${distPath}`);
-  if (typeof mod.activate !== 'function') {
-    console.error('❌ extension.js does not export activate()');
-    process.exit(1);
-  }
-  console.log('✅ extension.js exports activate()');
-} catch (e) {
-  console.error('❌ extension.js failed to load:', e.message);
-  process.exit(1);
+  execFileSync(process.execPath, ['--check', distPath], { cwd: root, stdio: 'inherit' });
+} catch (error) {
+  fail(`dist/extension.js failed syntax validation: ${error.message}`);
 }
 
-// 4. Check package.json is valid
+const bundleChecks = [
+  ['CommonJS module export', /module\.exports\s*=/],
+  ['activate() export', /activate\s*:\s*\(\)\s*=>\s*activate/],
+  ['external vscode dependency', /require\(['\"]vscode['\"]\)/],
+];
+for (const [label, pattern] of bundleChecks) {
+  if (!pattern.test(bundle)) {
+    fail(`missing ${label} in dist/extension.js`);
+  }
+  console.log(`${label} present`);
+}
+
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 if (!pkg.name || !pkg.version || !pkg.main) {
-  console.error('❌ package.json missing required fields');
-  process.exit(1);
+  fail('package.json missing required fields');
 }
-console.log(`✅ package.json valid: ${pkg.name}@${pkg.version}`);
+if (!existsSync(join(root, pkg.main))) {
+  fail(`package.json main does not exist: ${pkg.main}`);
+}
+console.log(`package.json valid: ${pkg.name}@${pkg.version}`);
 
-// 5. Verify no obvious issues with the contributes section
 if (!pkg.contributes?.commands?.length) {
-  console.error('❌ No commands registered');
-  process.exit(1);
+  fail('no commands registered');
 }
-console.log(`✅ ${pkg.contributes.commands.length} commands registered`);
+console.log(`${pkg.contributes.commands.length} commands registered`);
 
-// 6. Verify activationEvents are set
 if (!pkg.activationEvents?.length) {
-  console.error('❌ No activationEvents — extension activates on every launch');
-  process.exit(1);
+  fail('no activation events configured');
 }
-console.log(`✅ ${pkg.activationEvents.length} activation events configured`);
+console.log(`${pkg.activationEvents.length} activation events configured`);
 
-console.log('\n🎉 Smoke test passed!');
+console.log('Smoke test passed.');

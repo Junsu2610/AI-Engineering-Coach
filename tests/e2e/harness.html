@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-e2e-harness="booting">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,6 +39,7 @@ body { background: var(--vscode-editor-background); color: var(--vscode-editor-f
       <li class="nav-group-header">Observe</li>
       <li><a href="#" data-page="dashboard" class="active"><span class="nav-icon">&#9632;</span> Dashboard</a></li>
       <li><a href="#" data-page="timeline"><span class="nav-icon">&#9472;</span> Timeline<span class="nav-badge" id="badge-sessions"></span></a></li>
+      <li><a href="#" data-page="image-gallery"><span class="nav-icon">&#9632;</span> Coding Moments</a></li>
       <li class="nav-group-header">Measure</li>
       <li><a href="#" data-page="output"><span class="nav-icon">&#9650;</span> Output<span class="nav-badge" id="badge-output"></span></a></li>
       <li><a href="#" data-page="burndown"><span class="nav-icon">&#9660;</span> Burndown<span class="nav-badge" id="badge-burndown"></span></a></li>
@@ -75,6 +76,8 @@ body { background: var(--vscode-editor-background); color: var(--vscode-editor-f
 </div>
 <script>
 // Mock VS Code API
+window.__e2eUnknownRpcMethods = [];
+
 function acquireVsCodeApi() {
   return {
     postMessage(msg) {
@@ -107,6 +110,8 @@ function getMockData(method, params) {
   const labels30 = genLabels(30);
 
   const mocks = {
+    getCapabilities: () => ({ host: 'vscode', llm: true }),
+
     getStats: () => ({ totalSessions: 127, totalWorkspaces: 12, totalRequests: 2841 }),
 
     getWorkspaces: () => [
@@ -151,7 +156,15 @@ function getMockData(method, params) {
       byLanguage: { labels: ['TypeScript', 'Python', 'Go', 'Rust'], aiLoc: [8200, 3100, 2100, 1120], userLoc: [1800, 900, 400, 100] },
       dailyTimeline: { labels: labels30, aiLoc: labels30.map(() => Math.floor(Math.random() * 600) + 100), userLoc: labels30.map(() => Math.floor(Math.random() * 150) + 20) },
       byWorkspace: { labels: ['my-api', 'frontend-app', 'data-pipeline', 'mobile-sdk', 'infra-tools'], aiLoc: [5000, 4200, 3100, 1500, 720], userLoc: [1200, 1000, 600, 300, 100] },
-      dailyByWorkspace: { 'my-api': labels30.map(() => Math.floor(Math.random() * 200) + 50) }
+      dailyByWorkspace: { 'my-api': labels30.map((_, i) => 180 + (i % 6) * 20) },
+      dailyByModel: {
+        'gpt-4o': labels30.map((_, i) => 260 + (i % 7) * 25),
+        'claude-sonnet-4-20250514': labels30.map((_, i) => 140 + (i % 5) * 20)
+      },
+      dailyByHarness: {
+        'Local Agent': labels30.map((_, i) => 300 + (i % 6) * 30),
+        'Claude Code': labels30.map((_, i) => 120 + (i % 4) * 20)
+      }
     }),
 
     getConsumption: () => ({
@@ -362,7 +375,17 @@ function getMockData(method, params) {
       ]
     }),
 
-    getFlowState: () => ({ avgSessionLength: 28.5, avgRequestsPerSession: 22.4, focusScore: 78, interruptionRate: 0.12 }),
+    getFlowState: () => ({
+      days: [],
+      overallFlowScore: 78,
+      avgFollowUpSec: 42,
+      avgBlockMin: 28.5,
+      deepFlowDays: 8,
+      totalDays: 12,
+      weeklyTrend: { labels: ['W17', 'W18', 'W19', 'W20'], scores: [71, 74, 76, 78] },
+      hourlyFlow: Array.from({ length: 24 }, (_, hour) => (hour >= 9 && hour <= 17 ? 70 + (hour % 5) : 0)),
+      suggestions: []
+    }),
 
     getHourlyDistribution: () => ({
       hours: Array.from({ length: 24 }, (_, h) => (h >= 9 && h <= 17) ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 3)),
@@ -381,11 +404,11 @@ function getMockData(method, params) {
       contextAntiPatterns: []
     }),
     getDataExplorer: () => ({ sessions: [], fields: [] }),
-    getDataExplorerFields: () => ([]),
+    getDataExplorerFields: () => ({ fields: [], requestCount: 0, sessionCount: 0 }),
     getRuleEditor: () => ({ rules: [], previews: [], layers: [], pending: [] }),
     getSessions: () => ({ sessions: [], totalCount: 0 }),
     getSessionDetail: () => null,
-    getMetricList: () => ([]),
+    getMetricList: () => ({ metrics: [] }),
     getRuleCoverage: () => ({ rules: [], workspaces: [], matrix: {} }),
     getRulePreview: () => ({ matches: [] }),
     getRuleSource: () => ({ source: '' }),
@@ -395,6 +418,7 @@ function getMockData(method, params) {
     getFieldSchema: () => ({ fields: [] }),
     getSdlcRepoScan: () => ({ repos: [] }),
     getSdlcToolAnalysis: () => ({ mcpServers: [] }),
+    getImageGallery: () => ({ moments: [] }),
     getWorkspaceDeps: () => ({ deps: [] }),
     discoverCatalog: () => ({ items: [], totalScanned: 0 }),
     triageCatalog: () => ({ items: [] }),
@@ -413,13 +437,21 @@ function getMockData(method, params) {
   };
 
   const handler = mocks[method];
-  if (handler) return handler();
-  return {};
+  if (handler) return handler(params);
+
+  const message = `No E2E mock registered for RPC method "${String(method)}"`;
+  window.__e2eUnknownRpcMethods.push(String(method));
+  console.error(message);
+  return { error: message };
 }
 
 window.getMockData = getMockData;
 </script>
-<script src="/dist/webview/app.js"></script>
+<script
+  src="/dist/webview/app.js"
+  onload="document.documentElement.dataset.e2eHarness = 'app-loaded'"
+  onerror="document.documentElement.dataset.e2eHarness = 'app-load-failed'"
+></script>
 <script>
 // In ?mode=loading the harness keeps the loading screen up and streams a parse-progress message
 // carrying resource telemetry, so e2e can assert the telemetry strip renders (issue #106).

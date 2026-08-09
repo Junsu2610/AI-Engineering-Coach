@@ -189,7 +189,7 @@ A few features depend on the local VS Code language model and are hidden in canv
 
 ## Model and harness benchmark
 
-The repository includes a 14-scenario benchmark contract plus 13 executable hidden-verifier fixtures for comparing manager/coder scenario tracks, model baselines, controlled harness uplift, and native end-to-end performance. The verifier is local; configured harness adapters perform the model calls. See [Model and Harness Benchmark](docs/agent-model-harness-benchmark.md) for the run protocol and scorecard commands.
+The repository includes a 16-scenario benchmark contract plus 15 executable hidden-verifier fixtures for comparing manager/coder scenario tracks, model baselines, controlled harness uplift, and native end-to-end performance. The verifier is local; configured harness adapters perform the model calls. See [Model and Harness Benchmark](docs/agent-model-harness-benchmark.md) for the run protocol and scorecard commands.
 
 ---
 

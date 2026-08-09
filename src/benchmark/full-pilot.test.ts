@@ -126,6 +126,25 @@ describe('full executable benchmark registry', () => {
       });
       expect(q01.run.scores.correctness).toBe(100);
 
+      const m02 = await run('M02-inbox-triage', options => {
+        writeFileSync(join(options.cwd, 'MANAGER_TRIAGE.md'), [
+          '# Manager triage',
+          '## 001 - P0 compose-router outage',
+          'Lane: ops. Registry evidence: registry/projects.json marks criticality high and runtime nas.',
+          'Verification: inspect docs/PROJECT_STATUS.md and reproduce with docker compose before recovery.',
+          '## 002 - P1 HR seed regression',
+          'Lane: coder. Verification: run npm run seed:all and compare 42 expected rows with 38 observed rows.',
+          '## 004 - P2 batch import request',
+          'Lane: manager. Blocked-by: 002 until the seed pipeline is stable.',
+          'Verification: read REQUEST.md and confirm the seed contract before decomposition.',
+          '## 003 - P3 stale project goal',
+          'Lane: manager. Analysis-only: compare PROJECT_GOAL.md with README and propose a docs-only update.',
+          'Verification: review both documents without editing code.',
+        ].join('\n'), 'utf8');
+        return 'Wrote MANAGER_TRIAGE.md without applying fixes.';
+      });
+      expect(m02.run.scores.correctness).toBe(100);
+
       const f02 = await run('F02-cancellation-race', options => {
         replaceFile(
           options,
@@ -201,6 +220,17 @@ describe('full executable benchmark registry', () => {
       });
       expect(c01.run.scores.correctness).toBe(100);
 
+      const sh10 = await run('SH10-runtime-boundary', options => {
+        replaceFile(
+          options,
+          'source/shared-config.mjs',
+          'DEFAULT_GATEWAY_PORT = 9000',
+          'DEFAULT_GATEWAY_PORT = 20128',
+        );
+        return 'Changed canonical source/shared-config.mjs only. npm test passed; runtime-mirror remained untouched.';
+      });
+      expect(sh10.run.scores.correctness).toBe(100);
+
       const e01 = await run('E01-failing-check-recovery', options => {
         writeFileSync(join(options.cwd, 'src', 'parser.mjs'), [
           'export function parsePair(line) {',
@@ -230,7 +260,7 @@ describe('full executable benchmark registry', () => {
       });
       expect(v01.run.scores.correctness).toBe(100);
 
-      for (const result of [u02, p01, q01, f02, m01, r01, c01, e01, a01, v01]) {
+      for (const result of [u02, p01, q01, m02, f02, m01, r01, c01, sh10, e01, a01, v01]) {
         expect(result.run.hardFailures).toEqual([]);
       }
     } finally {

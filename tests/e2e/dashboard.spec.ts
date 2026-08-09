@@ -1,13 +1,25 @@
 import { test, expect, Page } from '@playwright/test';
 
 const HARNESS_URL = 'http://localhost:3999/tests/e2e/harness.html';
+const ROUTE_SENTINELS = {
+  timeline: '#timelineLanes',
+  'image-gallery': '#content .page-empty',
+  output: 'canvas#prodModelChart',
+  patterns: '#heatmapGrid',
+  'anti-patterns': '#tab-antipatterns',
+  skills: '#customSection',
+  'config-health': '#ctxSubTabContent',
+  'level-up': '.experiments-page',
+  'data-explorer': '#explorer-field-list',
+  'rule-playground': '#playground-expr',
+} as const;
 
 async function waitForDashboard(page: Page) {
   await page.goto(HARNESS_URL);
-  await page.waitForFunction(() => {
-    const content = document.getElementById('content');
-    return content && content.innerHTML.length > 200 && !content.querySelector('.loading-screen') && !content.querySelector('.loading-spinner') && !content.querySelector('.error-boundary');
-  }, { timeout: 10000 });
+  await expect(page.locator('html')).toHaveAttribute('data-e2e-harness', 'app-loaded');
+  await expect(page.locator('.nav-links [data-page="dashboard"]')).toHaveClass(/\bactive\b/);
+  await expect(page.locator('canvas#dailyChart')).toBeVisible();
+  await expect(page.locator('#content .error-boundary')).toHaveCount(0);
 }
 
 test.describe('Dashboard', () => {
@@ -55,15 +67,19 @@ test.describe('Dashboard', () => {
   });
 
   test('navigation works to all pages', async ({ page }) => {
-    const pages = ['timeline', 'output', 'burndown', 'patterns', 'anti-patterns'];
-    for (const p of pages) {
-      await page.locator(`[data-page="${p}"]`).first().click();
-      await page.waitForTimeout(800);
-      // Check no uncaught error boundary
-      const hasError = await page.locator('.error-boundary').count();
-      expect(hasError, `Page ${p} has error`).toBe(0);
-      await page.locator('[data-page="dashboard"]').first().click();
-      await page.waitForTimeout(800);
+    await expect(page.locator('.nav-links [data-page="burndown"]')).toHaveCount(0);
+    for (const [route, sentinel] of Object.entries(ROUTE_SENTINELS)) {
+      const link = page.locator(`.nav-links [data-page="${route}"]`);
+      await link.click();
+      await expect(link).toHaveClass(/\bactive\b/);
+      await expect(page.locator(sentinel)).toBeVisible();
+      await expect(page.locator('#content .loading-spinner:visible')).toHaveCount(0);
+      await expect(page.locator('#content .error-boundary'), `Page ${route} has error`).toHaveCount(0);
+
+      const dashboardLink = page.locator('.nav-links [data-page="dashboard"]');
+      await dashboardLink.click();
+      await expect(dashboardLink).toHaveClass(/\bactive\b/);
+      await expect(page.locator('canvas#dailyChart')).toBeVisible();
     }
   });
 

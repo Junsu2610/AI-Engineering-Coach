@@ -14,6 +14,21 @@ import {
 } from './runtime-debug';
 
 describe('getRuntimeDebugLogPath', () => {
+  it('uses the isolated test cache instead of the user profile cache', () => {
+    const cacheDir = process.env.AI_ENGINEER_COACH_CACHE_DIR;
+    expect(cacheDir).toBeTruthy();
+
+    const logDir = path.dirname(getRuntimeDebugLogPath());
+    expect(path.resolve(logDir)).toBe(path.resolve(cacheDir!));
+
+    const home = process.env.HOME || process.env.USERPROFILE;
+    if (home) {
+      const userCacheDir = path.resolve(home, '.copilot-analytics-cache');
+      const relative = path.relative(userCacheDir, path.resolve(logDir));
+      expect(relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))).toBe(false);
+    }
+  });
+
   it('returns a string path ending with runtime.log', () => {
     const p = getRuntimeDebugLogPath();
     expect(p).toMatch(/runtime\.log$/);

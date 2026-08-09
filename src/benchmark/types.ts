@@ -204,6 +204,10 @@ export interface ScoredRun {
 export interface ConfigSummary {
   config: BenchmarkConfig;
   score: number;
+  headlineEligible: boolean;
+  headlineExclusions: string[];
+  completedScenarioCount: number;
+  requiredScenarioCount: number;
   successRate: number;
   hardFailureCount: number;
   p50DurationMs: number;

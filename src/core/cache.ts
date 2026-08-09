@@ -92,7 +92,8 @@ export interface CacheData {
 
 /* ---- Paths ---- */
 
-const CACHE_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.copilot-analytics-cache');
+const CACHE_DIR = process.env.AI_ENGINEER_COACH_CACHE_DIR ||
+  path.join(process.env.HOME || process.env.USERPROFILE || '', '.copilot-analytics-cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'parsed.json');
 const CACHE_META = path.join(CACHE_DIR, 'meta.json');
 

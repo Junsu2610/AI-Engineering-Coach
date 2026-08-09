@@ -21,6 +21,11 @@ const EFFICIENCY_METRIC_WEIGHTS = {
 
 const REQUIRED_RUN_SCORES = ['correctness', 'safety', 'quality', 'autonomy', 'evidence'] as const;
 const SAFE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
+const VERIFICATION_PASS_SCORE = 70;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 function round(value: number, digits = 2): number {
   const multiplier = 10 ** digits;
@@ -31,14 +36,16 @@ function isFiniteNonNegative(value: number | undefined): value is number {
   return value !== undefined && Number.isFinite(value) && value >= 0;
 }
 
-function validateBudgetRange(name: string, range: BudgetRange | undefined): string[] {
+function validateBudgetRange(name: string, range: BudgetRange | unknown): string[] {
   if (range === undefined) {
     return [];
   }
-  if (!isFiniteNonNegative(range.target) || !isFiniteNonNegative(range.limit)) {
+  if (!isRecord(range)
+    || !isFiniteNonNegative(range.target as number | undefined)
+    || !isFiniteNonNegative(range.limit as number | undefined)) {
     return [`${name} target and limit must be finite non-negative numbers`];
   }
-  if (range.limit <= range.target) {
+  if ((range.limit as number) <= (range.target as number)) {
     return [`${name} limit must be greater than target`];
   }
   return [];
@@ -59,71 +66,122 @@ export function scenarioTracks(scenario: BenchmarkScenario): BenchmarkTrack[] {
 
 function validateScenario(
   suite: BenchmarkSuite,
-  scenario: BenchmarkScenario,
+  value: unknown,
   scenarioIds: Set<string>,
+  index: number,
 ): string[] {
+  if (!isRecord(value)) {
+    return [`Suite scenario ${index} must be an object`];
+  }
+  const scenario = value as unknown as BenchmarkScenario;
   const errors: string[] = [];
-  if (!SAFE_ID_PATTERN.test(scenario.id)) {
-    errors.push(`Scenario id is not path-safe: ${scenario.id}`);
-  }
-  if (scenarioIds.has(scenario.id)) {
+  const id = typeof scenario.id === 'string' ? scenario.id : `scenario[${index}]`;
+  if (typeof scenario.id !== 'string' || !SAFE_ID_PATTERN.test(scenario.id)) {
+    errors.push(`Scenario id is not path-safe: ${String(scenario.id)}`);
+  } else if (scenarioIds.has(scenario.id)) {
     errors.push(`Duplicate scenario id: ${scenario.id}`);
+  } else {
+    scenarioIds.add(scenario.id);
   }
-  scenarioIds.add(scenario.id);
+  for (const field of ['title', 'category', 'prompt'] as const) {
+    if (typeof scenario[field] !== 'string' || scenario[field].trim().length === 0) {
+      errors.push(`${id}.${field} must be a non-empty string`);
+    }
+  }
+  if (!['small', 'medium', 'large'].includes(scenario.difficulty)) {
+    errors.push(`${id}.difficulty is invalid`);
+  }
+  for (const field of ['setup', 'acceptance'] as const) {
+    const entries = scenario[field];
+    if (!Array.isArray(entries) || entries.some(entry => typeof entry !== 'string')) {
+      errors.push(`${id}.${field} must be an array of strings`);
+    }
+  }
   if (scenario.tracks !== undefined) {
-    if (scenario.tracks.length === 0) {
-      errors.push(`${scenario.id} tracks must not be empty`);
-    }
-    const trackSet = new Set<BenchmarkTrack>(scenario.tracks);
-    if (trackSet.size !== scenario.tracks.length) {
-      errors.push(`${scenario.id} tracks contains duplicates`);
-    }
-    for (const track of scenario.tracks) {
-      if (!BENCHMARK_TRACKS.includes(track)) {
-        errors.push(`${scenario.id} contains unknown track ${String(track)}`);
+    if (!Array.isArray(scenario.tracks)) {
+      errors.push(`${id} tracks must be an array`);
+    } else {
+      if (scenario.tracks.length === 0) {
+        errors.push(`${id} tracks must not be empty`);
+      }
+      const trackSet = new Set<BenchmarkTrack>(scenario.tracks);
+      if (trackSet.size !== scenario.tracks.length) {
+        errors.push(`${id} tracks contains duplicates`);
+      }
+      for (const track of scenario.tracks) {
+        if (!BENCHMARK_TRACKS.includes(track)) {
+          errors.push(`${id} contains unknown track ${String(track)}`);
+        }
       }
     }
   }
-  errors.push(...validateScore(`${scenario.id}.passScore`, scenario.passScore));
-  errors.push(...validateScore(`${scenario.id}.minimumCorrectness`, scenario.minimumCorrectness));
-  const categorySet = new Set<ScoreCategory>(scenario.automaticCategories);
-  if (categorySet.size !== scenario.automaticCategories.length) {
-    errors.push(`${scenario.id} automaticCategories contains duplicates`);
-  }
-  for (const category of scenario.automaticCategories) {
-    if (!SCORE_CATEGORIES.includes(category)) {
-      errors.push(`${scenario.id} contains unknown automatic category ${String(category)}`);
+  errors.push(...validateScore(`${id}.passScore`, scenario.passScore));
+  errors.push(...validateScore(`${id}.minimumCorrectness`, scenario.minimumCorrectness));
+  if (!Array.isArray(scenario.automaticCategories)) {
+    errors.push(`${id} automaticCategories must be an array`);
+  } else {
+    const categorySet = new Set<ScoreCategory>(scenario.automaticCategories);
+    if (categorySet.size !== scenario.automaticCategories.length) {
+      errors.push(`${id} automaticCategories contains duplicates`);
+    }
+    for (const category of scenario.automaticCategories) {
+      if (!SCORE_CATEGORIES.includes(category)) {
+        errors.push(`${id} contains unknown automatic category ${String(category)}`);
+      }
+    }
+    const objectiveWeight = automaticWeight(suite, scenario);
+    if (Number.isFinite(suite.minimumAutomaticWeight)
+      && objectiveWeight < suite.minimumAutomaticWeight) {
+      errors.push(`${id} automatic score weight is ${objectiveWeight}, below ${suite.minimumAutomaticWeight}`);
     }
   }
-  const objectiveWeight = automaticWeight(suite, scenario);
-  if (objectiveWeight < suite.minimumAutomaticWeight) {
-    errors.push(`${scenario.id} automatic score weight is ${objectiveWeight}, below ${suite.minimumAutomaticWeight}`);
+  if (!isRecord(scenario.budgets)) {
+    errors.push(`${id}.budgets must be an object`);
+  } else {
+    if (scenario.budgets.durationMs === undefined) {
+      errors.push(`${id}.durationMs is required`);
+    }
+    errors.push(...validateBudgetRange(`${id}.durationMs`, scenario.budgets.durationMs));
+    errors.push(...validateBudgetRange(`${id}.totalTokens`, scenario.budgets.totalTokens));
+    errors.push(...validateBudgetRange(`${id}.costUsd`, scenario.budgets.costUsd));
+    errors.push(...validateBudgetRange(`${id}.toolCalls`, scenario.budgets.toolCalls));
   }
-  errors.push(...validateBudgetRange(`${scenario.id}.durationMs`, scenario.budgets.durationMs));
-  errors.push(...validateBudgetRange(`${scenario.id}.totalTokens`, scenario.budgets.totalTokens));
-  errors.push(...validateBudgetRange(`${scenario.id}.costUsd`, scenario.budgets.costUsd));
-  errors.push(...validateBudgetRange(`${scenario.id}.toolCalls`, scenario.budgets.toolCalls));
   if (scenario.fixture !== undefined) {
-    if (!SAFE_ID_PATTERN.test(scenario.fixture.id)) {
-      errors.push(`${scenario.id} fixture id is not path-safe`);
-    }
-    if (scenario.fixture.version.trim().length === 0) {
-      errors.push(`${scenario.id} fixture version must not be empty`);
-    }
-    if (!SAFE_ID_PATTERN.test(scenario.fixture.verifier)) {
-      errors.push(`${scenario.id} fixture verifier is not path-safe`);
+    if (!isRecord(scenario.fixture)) {
+      errors.push(`${id} fixture must be an object`);
+    } else {
+      if (typeof scenario.fixture.id !== 'string' || !SAFE_ID_PATTERN.test(scenario.fixture.id)) {
+        errors.push(`${id} fixture id is not path-safe`);
+      }
+      if (typeof scenario.fixture.version !== 'string'
+        || scenario.fixture.version.trim().length === 0) {
+        errors.push(`${id} fixture version must not be empty`);
+      }
+      if (typeof scenario.fixture.verifier !== 'string'
+        || !SAFE_ID_PATTERN.test(scenario.fixture.verifier)) {
+        errors.push(`${id} fixture verifier is not path-safe`);
+      }
     }
   }
   return errors;
 }
 
-export function validateSuite(suite: BenchmarkSuite): string[] {
+export function validateSuite(value: BenchmarkSuite | unknown): string[] {
+  if (!isRecord(value)) {
+    return ['Suite must be an object'];
+  }
+  const suite = value as unknown as BenchmarkSuite;
   const errors: string[] = [];
   if (suite.schemaVersion !== 1) {
     errors.push('Suite schemaVersion must be 1');
   }
+  for (const field of ['name', 'description'] as const) {
+    if (typeof suite[field] !== 'string' || suite[field].trim().length === 0) {
+      errors.push(`Suite ${field} must be a non-empty string`);
+    }
+  }
   const weightTotal = SCORE_CATEGORIES.reduce((total, category) => {
-    const weight = suite.weights?.[category];
+    const weight = isRecord(suite.weights) ? suite.weights[category] as number | undefined : undefined;
     if (!isFiniteNonNegative(weight)) {
       errors.push(`Score weight ${category} must be a finite non-negative number`);
       return total;
@@ -142,27 +200,61 @@ export function validateSuite(suite: BenchmarkSuite): string[] {
   if (!Number.isInteger(suite.repetitions) || suite.repetitions < 1) {
     errors.push('Suite repetitions must be a positive integer');
   }
+  if (!Number.isFinite(suite.minimumAutomaticWeight)
+    || suite.minimumAutomaticWeight < 0 || suite.minimumAutomaticWeight > 100) {
+    errors.push('minimumAutomaticWeight must be between 0 and 100');
+  }
+  if (!Array.isArray(suite.hardFailureCodes)
+    || suite.hardFailureCodes.some(code => typeof code !== 'string' || !SAFE_ID_PATTERN.test(code))) {
+    errors.push('Suite hardFailureCodes must be an array of path-safe strings');
+  } else if (new Set(suite.hardFailureCodes).size !== suite.hardFailureCodes.length) {
+    errors.push('Suite hardFailureCodes contains duplicates');
+  }
+  if (!Array.isArray(suite.scenarios)) {
+    return [...errors, 'Suite scenarios must be an array'];
+  }
   const scenarioIds = new Set<string>();
-  for (const scenario of suite.scenarios) {
-    errors.push(...validateScenario(suite, scenario, scenarioIds));
+  for (const [index, scenario] of suite.scenarios.entries()) {
+    errors.push(...validateScenario(suite, scenario, scenarioIds, index));
   }
   return errors;
 }
 
-export function validateConfigs(configSet: BenchmarkConfigSet): string[] {
+export function validateConfigs(value: BenchmarkConfigSet | unknown): string[] {
+  if (!isRecord(value)) {
+    return ['Config set must be an object'];
+  }
+  const configSet = value as unknown as BenchmarkConfigSet;
   const errors: string[] = [];
   if (configSet.schemaVersion !== 1) {
     errors.push('Config schemaVersion must be 1');
   }
+  if (!Array.isArray(configSet.configs)) {
+    return [...errors, 'Config configs must be an array'];
+  }
   const byId = new Map<string, BenchmarkConfig>();
-  for (const config of configSet.configs) {
-    if (!SAFE_ID_PATTERN.test(config.id)) {
-      errors.push(`Config id is not path-safe: ${config.id}`);
+  const validConfigs: BenchmarkConfig[] = [];
+  for (const [index, candidate] of configSet.configs.entries()) {
+    if (!isRecord(candidate)) {
+      errors.push(`Config entry ${index} must be an object`);
+      continue;
+    }
+    const config = candidate as unknown as BenchmarkConfig;
+    if (typeof config.id !== 'string' || !SAFE_ID_PATTERN.test(config.id)) {
+      errors.push(`Config id is not path-safe: ${String(config.id)}`);
+      continue;
     }
     if (byId.has(config.id)) {
       errors.push(`Duplicate config id: ${config.id}`);
+    } else {
+      byId.set(config.id, config);
     }
-    byId.set(config.id, config);
+    validConfigs.push(config);
+    for (const field of ['harness', 'model'] as const) {
+      if (typeof config[field] !== 'string' || config[field].trim().length === 0) {
+        errors.push(`${config.id} ${field} must be a non-empty string`);
+      }
+    }
     if (!['controlled', 'native'].includes(config.mode)) {
       errors.push(`${config.id} has invalid mode ${String(config.mode)}`);
     }
@@ -175,6 +267,9 @@ export function validateConfigs(configSet: BenchmarkConfigSet): string[] {
     if (config.role === 'native' && config.mode !== 'native') {
       errors.push(`${config.id} native configs must use native mode`);
     }
+    if (config.role === 'candidate' && config.mode !== 'controlled') {
+      errors.push(`${config.id} candidate configs must use controlled mode`);
+    }
     if (config.adapter !== undefined
       && !['manual', 'codex-exec', 'cursor-session'].includes(config.adapter)) {
       errors.push(`${config.id} has invalid adapter ${String(config.adapter)}`);
@@ -185,47 +280,67 @@ export function validateConfigs(configSet: BenchmarkConfigSet): string[] {
     if (config.adapter === 'cursor-session' && config.reasoningEffort === undefined) {
       errors.push(`${config.id} cursor-session configs require reasoningEffort`);
     }
+    if (config.adapter === 'codex-exec' && !['codex', 'codex-cli'].includes(config.harness)) {
+      errors.push(`${config.id} codex-exec configs must use codex or codex-cli harness`);
+    }
+    if (config.adapter === 'cursor-session' && config.harness !== 'cursor') {
+      errors.push(`${config.id} cursor-session configs must use the cursor harness`);
+    }
     if (config.reasoningEffort !== undefined
       && !['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(config.reasoningEffort)) {
       errors.push(`${config.id} has invalid reasoning effort ${String(config.reasoningEffort)}`);
     }
     if (config.codexProvider !== undefined) {
+      if (!isRecord(config.codexProvider)) {
+        errors.push(`${config.id} codexProvider must be an object`);
+        continue;
+      }
       const provider = config.codexProvider;
       if (config.adapter !== 'codex-exec') {
         errors.push(`${config.id} codexProvider requires the codex-exec adapter`);
       }
-      if (!SAFE_ID_PATTERN.test(provider.id)) {
-        errors.push(`${config.id} has invalid Codex provider id ${provider.id}`);
+      if (typeof provider.id !== 'string' || !SAFE_ID_PATTERN.test(provider.id)) {
+        errors.push(`${config.id} has invalid Codex provider id ${String(provider.id)}`);
       }
-      if (provider.name.trim().length === 0) {
+      if (typeof provider.name !== 'string' || provider.name.trim().length === 0) {
         errors.push(`${config.id} Codex provider name must not be empty`);
       }
-      try {
-        const url = new URL(provider.baseUrl);
-        if (!['http:', 'https:'].includes(url.protocol) || url.username.length > 0
-          || url.password.length > 0) {
-          errors.push(`${config.id} Codex provider baseUrl must be an HTTP URL without credentials`);
-        }
-      } catch {
+      if (typeof provider.baseUrl !== 'string') {
         errors.push(`${config.id} Codex provider baseUrl must be a valid URL`);
+      } else {
+        try {
+          const url = new URL(provider.baseUrl);
+          if (!['http:', 'https:'].includes(url.protocol) || url.username.length > 0
+            || url.password.length > 0) {
+            errors.push(`${config.id} Codex provider baseUrl must be an HTTP URL without credentials`);
+          }
+        } catch {
+          errors.push(`${config.id} Codex provider baseUrl must be a valid URL`);
+        }
       }
-      if (!/^[A-Z_][A-Z0-9_]*$/.test(provider.envKey)) {
-        errors.push(`${config.id} has invalid Codex provider envKey ${provider.envKey}`);
+      if (typeof provider.envKey !== 'string'
+        || !/^[A-Z_][A-Z0-9_]*$/.test(provider.envKey)) {
+        errors.push(`${config.id} has invalid Codex provider envKey ${String(provider.envKey)}`);
       }
       if (!['responses', 'chat'].includes(provider.wireApi)) {
         errors.push(`${config.id} has invalid Codex provider wireApi ${String(provider.wireApi)}`);
       }
     }
   }
-  for (const config of configSet.configs) {
+  for (const config of validConfigs) {
     if (config.baselineConfigId === undefined) {
       continue;
     }
     const baseline = byId.get(config.baselineConfigId);
     if (baseline === undefined) {
       errors.push(`${config.id} references missing baseline ${config.baselineConfigId}`);
-    } else if (baseline.model !== config.model) {
-      errors.push(`${config.id} and baseline ${baseline.id} must use the same model`);
+    } else {
+      if (baseline.model !== config.model) {
+        errors.push(`${config.id} and baseline ${baseline.id} must use the same model`);
+      }
+      if (baseline.role !== 'baseline' || baseline.mode !== 'controlled') {
+        errors.push(`${config.id} baselineConfigId must reference a controlled baseline config`);
+      }
     }
   }
   return errors;
@@ -309,6 +424,11 @@ function validateRunIdentity(
   }
   if (!Number.isInteger(run.iteration) || run.iteration < 1 || run.iteration > suite.repetitions) {
     errors.push(`${run.runId} iteration must be between 1 and ${suite.repetitions}`);
+  } else {
+    const expectedRunId = `${run.scenarioId}-${run.configId}-r${run.iteration}`;
+    if (run.runId !== expectedRunId) {
+      errors.push(`${run.runId} must use canonical run id ${expectedRunId}`);
+    }
   }
   if (Number.isNaN(Date.parse(run.startedAt))) {
     errors.push(`${run.runId} startedAt must be an ISO-compatible timestamp`);
@@ -341,26 +461,28 @@ function validateRunMetrics(run: BenchmarkRun): string[] {
   return errors;
 }
 
-function validateArtifact(name: string, artifact: { path: string; sha256: string; bytes: number } | undefined): string[] {
-  if (artifact === undefined) {
+function validateArtifact(name: string, artifact: unknown): string[] {
+  if (typeof artifact !== 'object' || artifact === null) {
     return [`${name} is required`];
   }
+  const candidate = artifact as Record<string, unknown>;
   const errors: string[] = [];
-  if (artifact.path.length === 0 || artifact.path.includes('..') || artifact.path.startsWith('/')
-    || /^[A-Za-z]:[\\/]/.test(artifact.path)) {
+  if (typeof candidate.path !== 'string' || candidate.path.length === 0
+    || candidate.path.includes('..') || /^[\\/]/.test(candidate.path)
+    || /^[A-Za-z]:/.test(candidate.path)) {
     errors.push(`${name}.path must be a relative path without parent traversal`);
   }
-  if (!/^[a-f0-9]{64}$/i.test(artifact.sha256)) {
+  if (typeof candidate.sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(candidate.sha256)) {
     errors.push(`${name}.sha256 must be a SHA-256 hex digest`);
   }
-  if (!Number.isInteger(artifact.bytes) || artifact.bytes < 0) {
+  if (typeof candidate.bytes !== 'number' || !Number.isInteger(candidate.bytes) || candidate.bytes < 0) {
     errors.push(`${name}.bytes must be a non-negative integer`);
   }
   return errors;
 }
 
 function validateExecution(execution: BenchmarkExecution | undefined, run: BenchmarkRun): string[] {
-  if (execution === undefined) {
+  if (typeof execution !== 'object' || execution === null) {
     return [`${run.runId}.execution is required for schemaVersion 2`];
   }
   const errors: string[] = [];
@@ -376,8 +498,59 @@ function validateExecution(execution: BenchmarkExecution | undefined, run: Bench
   if (typeof execution.timedOut !== 'boolean') {
     errors.push(`${run.runId}.execution.timedOut must be boolean`);
   }
-  if (!Array.isArray(execution.parseErrors) || !Array.isArray(execution.commands)) {
-    errors.push(`${run.runId}.execution parseErrors and commands must be arrays`);
+  if (execution.exitCode !== undefined
+    && (!Number.isInteger(execution.exitCode) || execution.exitCode < 0)) {
+    errors.push(`${run.runId}.execution.exitCode must be a non-negative integer`);
+  }
+  if (execution.outcome === 'completed'
+    && (execution.exitCode !== 0 || execution.timedOut)) {
+    errors.push(`${run.runId}.execution completed outcome requires exitCode 0 without timeout`);
+  }
+  if (execution.outcome === 'failed'
+    && (execution.exitCode === undefined || execution.exitCode === 0 || execution.timedOut)) {
+    errors.push(`${run.runId}.execution failed outcome requires a non-zero exitCode without timeout`);
+  }
+  if (execution.outcome === 'timed_out' && execution.timedOut !== true) {
+    errors.push(`${run.runId}.execution timed_out outcome requires timedOut=true`);
+  }
+  if (execution.timedOut === true && execution.outcome !== 'timed_out') {
+    errors.push(`${run.runId}.execution timedOut=true requires outcome=timed_out`);
+  }
+  if (!Array.isArray(execution.parseErrors)) {
+    errors.push(`${run.runId}.execution.parseErrors must be an array`);
+  } else if (execution.parseErrors.some(error => typeof error !== 'string')) {
+    errors.push(`${run.runId}.execution.parseErrors must contain only strings`);
+  } else if (execution.outcome === 'completed' && execution.parseErrors.length > 0) {
+    errors.push(`${run.runId}.execution completed outcome must not contain parse errors`);
+  }
+  if (!Array.isArray(execution.commands)) {
+    errors.push(`${run.runId}.execution.commands must be an array`);
+  } else {
+    const commandIds = new Set<string>();
+    for (const command of execution.commands) {
+      if (typeof command !== 'object' || command === null) {
+        errors.push(`${run.runId}.execution commands must contain objects`);
+        continue;
+      }
+      if (typeof command.id !== 'string' || !SAFE_ID_PATTERN.test(command.id)) {
+        errors.push(`${run.runId}.execution command id is not path-safe`);
+      } else if (commandIds.has(command.id)) {
+        errors.push(`${run.runId}.execution contains duplicate command id ${command.id}`);
+      } else {
+        commandIds.add(command.id);
+      }
+      if (typeof command.command !== 'string' || command.command.trim().length === 0) {
+        errors.push(`${run.runId}.execution command ${String(command.id)} must include command text`);
+      }
+      if (command.status !== undefined
+        && (typeof command.status !== 'string' || command.status.trim().length === 0)) {
+        errors.push(`${run.runId}.execution command ${String(command.id)} has invalid status`);
+      }
+      if (command.exitCode !== undefined
+        && (!Number.isInteger(command.exitCode) || command.exitCode < 0)) {
+        errors.push(`${run.runId}.execution command ${String(command.id)} has invalid exitCode`);
+      }
+    }
   }
   for (const artifactName of ['events', 'stderr', 'finalResponse'] as const) {
     errors.push(...validateArtifact(`${run.runId}.execution.artifacts.${artifactName}`, execution.artifacts?.[artifactName]));
@@ -390,46 +563,97 @@ function validateVerification(
   suite: BenchmarkSuite,
   run: BenchmarkRun,
 ): string[] {
-  if (verification === undefined) {
+  if (typeof verification !== 'object' || verification === null) {
     return [`${run.runId}.verification is required for schemaVersion 2`];
   }
   const errors: string[] = [];
-  if (!SAFE_ID_PATTERN.test(verification.verifierId)) {
+  if (typeof verification.verifierId !== 'string'
+    || !SAFE_ID_PATTERN.test(verification.verifierId)) {
     errors.push(`${run.runId}.verification.verifierId is not path-safe`);
   }
-  if (verification.verifierVersion.trim().length === 0) {
+  if (typeof verification.verifierVersion !== 'string'
+    || verification.verifierVersion.trim().length === 0) {
     errors.push(`${run.runId}.verification.verifierVersion must not be empty`);
   }
-  if (verification.fixtureVersion.trim().length === 0) {
+  if (typeof verification.fixtureVersion !== 'string'
+    || verification.fixtureVersion.trim().length === 0) {
     errors.push(`${run.runId}.verification.fixtureVersion must not be empty`);
   }
-  if (!/^[a-f0-9]{64}$/i.test(verification.fixtureSha256)) {
+  if (typeof verification.fixtureSha256 !== 'string'
+    || !/^[a-f0-9]{64}$/i.test(verification.fixtureSha256)) {
     errors.push(`${run.runId}.verification.fixtureSha256 must be a SHA-256 hex digest`);
   }
-  if (Number.isNaN(Date.parse(verification.completedAt))) {
+  if (typeof verification.completedAt !== 'string'
+    || Number.isNaN(Date.parse(verification.completedAt))) {
     errors.push(`${run.runId}.verification.completedAt must be an ISO-compatible timestamp`);
+  }
+  if (!Array.isArray(verification.changedFiles)) {
+    errors.push(`${run.runId}.verification.changedFiles must be an array`);
+  }
+  for (const path of Array.isArray(verification.changedFiles) ? verification.changedFiles : []) {
+    if (typeof path !== 'string' || path.length === 0 || path.includes('..')
+      || /^[\\/]/.test(path) || /^[A-Za-z]:[\\/]/.test(path)) {
+      errors.push(`${run.runId} changed file must be a safe relative path: ${String(path)}`);
+    }
   }
   if (!Array.isArray(verification.commandResults)) {
     errors.push(`${run.runId}.verification.commandResults must be an array`);
-  }
-  for (const path of verification.changedFiles ?? []) {
-    if (path.length === 0 || path.includes('..') || path.startsWith('/')
-      || /^[A-Za-z]:[\\/]/.test(path)) {
-      errors.push(`${run.runId} changed file must be a safe relative path: ${path}`);
+  } else {
+    const commandIds = new Set<string>();
+    for (const command of verification.commandResults) {
+      if (typeof command !== 'object' || command === null) {
+        errors.push(`${run.runId}.verification commandResults must contain objects`);
+        continue;
+      }
+      if (typeof command.id !== 'string' || !SAFE_ID_PATTERN.test(command.id)) {
+        errors.push(`${run.runId}.verification command id is not path-safe`);
+      } else if (commandIds.has(command.id)) {
+        errors.push(`${run.runId}.verification contains duplicate command id ${command.id}`);
+      } else {
+        commandIds.add(command.id);
+      }
+      if (typeof command.command !== 'string' || command.command.trim().length === 0) {
+        errors.push(`${run.runId}.verification command ${String(command.id)} must include command text`);
+      }
+      if (command.exitCode !== undefined
+        && (!Number.isInteger(command.exitCode) || command.exitCode < 0)) {
+        errors.push(`${run.runId}.verification command ${String(command.id)} has invalid exitCode`);
+      }
+      if (typeof command.timedOut !== 'boolean') {
+        errors.push(`${run.runId}.verification command ${String(command.id)} must include timedOut`);
+      }
     }
   }
   const knownCategories = new Set<keyof RunCategoryScores>([
     'correctness', 'safety', 'quality', 'autonomy', 'evidence',
   ]);
   const seenCategories = new Set<keyof RunCategoryScores>();
-  for (const check of verification.checks ?? []) {
+  const checkIds = new Set<string>();
+  if (!Array.isArray(verification.checks)) {
+    errors.push(`${run.runId}.verification.checks must be an array`);
+  }
+  for (const check of Array.isArray(verification.checks) ? verification.checks : []) {
+    if (typeof check !== 'object' || check === null) {
+      errors.push(`${run.runId}.verification checks must contain objects`);
+      continue;
+    }
+    if (typeof check.id !== 'string' || !SAFE_ID_PATTERN.test(check.id)) {
+      errors.push(`${run.runId} verification check id is not path-safe`);
+    } else if (checkIds.has(check.id)) {
+      errors.push(`${run.runId} verification contains duplicate check id ${check.id}`);
+    } else {
+      checkIds.add(check.id);
+    }
     if (!knownCategories.has(check.category)) {
       errors.push(`${run.runId} check ${check.id} has an invalid category`);
     }
     seenCategories.add(check.category);
     errors.push(...validateScore(`${run.runId}.verification.${check.id}`, check.score));
-    if (typeof check.passed !== 'boolean' || check.evidence.trim().length === 0) {
+    if (typeof check.passed !== 'boolean'
+      || typeof check.evidence !== 'string' || check.evidence.trim().length === 0) {
       errors.push(`${run.runId} verification check ${check.id} must include passed and evidence`);
+    } else if (check.passed !== (check.score >= VERIFICATION_PASS_SCORE)) {
+      errors.push(`${run.runId} verification check ${check.id} passed must match score >= ${VERIFICATION_PASS_SCORE}`);
     }
   }
   for (const category of ['correctness', 'safety', 'quality', 'autonomy', 'evidence'] as const) {
@@ -477,10 +701,11 @@ export function validateRun(
   if (run.schemaVersion === 2) {
     errors.push(...validateExecution(run.execution, run));
     errors.push(...validateVerification(run.verification, suite, run));
-    if (run.finishedAt !== undefined && Number.isNaN(Date.parse(run.finishedAt))) {
+    if (typeof run.finishedAt !== 'string' || Number.isNaN(Date.parse(run.finishedAt))) {
       errors.push(`${run.runId} finishedAt must be an ISO-compatible timestamp`);
     }
-    if (run.verification !== undefined) {
+    if (typeof run.verification === 'object' && run.verification !== null
+      && Array.isArray(run.verification.checks)) {
       const derived = deriveRunScores(run.verification.checks);
       for (const category of REQUIRED_RUN_SCORES) {
         if (Math.abs(derived[category] - run.scores[category]) > 0.01) {
@@ -489,7 +714,7 @@ export function validateRun(
       }
     }
     const config = configSet.configs.find(candidate => candidate.id === run.configId);
-    if (run.execution !== undefined && config !== undefined) {
+    if (typeof run.execution === 'object' && run.execution !== null && config !== undefined) {
       if (run.execution.model !== config.model || run.execution.mode !== config.mode) {
         errors.push(`${run.runId} execution provenance does not match its config`);
       }
@@ -508,7 +733,10 @@ export function validateRun(
   }
   const knownHardFailures = new Set(suite.hardFailureCodes);
   const seenHardFailures = new Set<string>();
-  for (const hardFailure of run.hardFailures ?? []) {
+  if (!Array.isArray(run.hardFailures)) {
+    errors.push(`${run.runId}.hardFailures must be an array`);
+  }
+  for (const hardFailure of Array.isArray(run.hardFailures) ? run.hardFailures : []) {
     if (!knownHardFailures.has(hardFailure)) {
       errors.push(`${run.runId} contains unknown hard failure ${hardFailure}`);
     }
@@ -549,7 +777,19 @@ export function scoreRun(
     0,
   );
   const hasHardFailure = run.hardFailures.length > 0;
-  const finalScore = hasHardFailure ? 0 : round(rawScore);
+  const executionPassed = run.schemaVersion !== 2 || (
+    run.execution?.outcome === 'completed'
+    && run.execution.exitCode === 0
+    && run.execution.timedOut === false
+    && run.execution.parseErrors.length === 0
+  );
+  const verifierChecksPassed = run.schemaVersion !== 2
+    || run.verification?.checks.every(check => check.passed) === true;
+  // A verifier or execution gate failure is a hard score gate even when the
+  // category averages retain partial diagnostic detail in rawScore.
+  const finalScore = hasHardFailure || !executionPassed || !verifierChecksPassed
+    ? 0
+    : round(rawScore);
   return {
     run,
     scenario,
@@ -561,6 +801,8 @@ export function scoreRun(
     rawScore: round(rawScore),
     finalScore,
     passed: !hasHardFailure
+      && executionPassed
+      && verifierChecksPassed
       && meetsEfficiencyCoverage
       && finalScore >= scenario.passScore
       && categoryScores.correctness >= scenario.minimumCorrectness,
@@ -662,12 +904,55 @@ function summarizeConfig(
   runs: ScoredRun[],
 ): ConfigSummary {
   const perScenario = [...scenarioScores(runs).values()];
+  const completedScenarioCount = new Set(runs.map(run => run.scenario.id)).size;
+  const requiredScenarioIds = suite.scenarios
+    .filter(scenario => scenario.fixture !== undefined)
+    .map(scenario => scenario.id);
+  const requiredScenarioSet = new Set(requiredScenarioIds);
+  const headlineExclusions: string[] = [];
+  if (requiredScenarioIds.length < 2) {
+    headlineExclusions.push('headline requires at least two executable scenarios');
+  }
+  if (config.adapter !== 'codex-exec') {
+    headlineExclusions.push(`adapter ${config.adapter ?? 'manual'} is not headline-eligible`);
+  }
+  if (runs.some(run => run.run.schemaVersion !== 2)) {
+    headlineExclusions.push('schemaVersion 1 records are diagnostic only');
+  }
+  if (runs.some(run => run.run.execution?.adapter !== 'codex-exec')) {
+    headlineExclusions.push('operator-assisted or non-executable records are diagnostic only');
+  }
+  const unexpectedScenarios = [...new Set(runs
+    .map(run => run.scenario.id)
+    .filter(scenarioId => !requiredScenarioSet.has(scenarioId)))];
+  if (unexpectedScenarios.length > 0) {
+    headlineExclusions.push(`non-executable scenarios included: ${unexpectedScenarios.join(', ')}`);
+  }
+  const missingRepetitions = requiredScenarioIds.flatMap(scenarioId => {
+    const iterations = new Set(runs
+      .filter(run => run.scenario.id === scenarioId)
+      .map(run => run.run.iteration));
+    return Array.from({ length: suite.repetitions }, (_, index) => index + 1)
+      .filter(iteration => !iterations.has(iteration))
+      .map(iteration => `${scenarioId}:r${iteration}`);
+  });
+  if (missingRepetitions.length > 0) {
+    headlineExclusions.push(`missing required repetitions: ${missingRepetitions.join(', ')}`);
+  }
+  if (config.mode === 'controlled'
+    && runs.some(run => (run.run.metrics.humanInterventions ?? 0) > 0)) {
+    headlineExclusions.push('controlled headline contains human interventions');
+  }
   const accepted = runs.filter(run => run.passed);
   const costs = runs.map(run => run.run.metrics.costUsd);
   const hasCompleteCostData = costs.every((cost): cost is number => cost !== undefined);
   return {
     config,
     score: round(mean(perScenario)),
+    headlineEligible: headlineExclusions.length === 0,
+    headlineExclusions,
+    completedScenarioCount,
+    requiredScenarioCount: requiredScenarioIds.length,
     successRate: round(100 * accepted.length / runs.length),
     hardFailureCount: runs.reduce((total, run) => total + run.run.hardFailures.length, 0),
     p50DurationMs: median(runs.map(run => run.run.metrics.durationMs)),
@@ -691,6 +976,18 @@ export function summarizeBenchmark(
   configSet: BenchmarkConfigSet,
   runs: BenchmarkRun[],
 ): BenchmarkSummary {
+  const identities = new Map<string, string>();
+  for (const run of runs) {
+    const identity = `${run.configId}\u0000${run.scenarioId}\u0000${run.iteration}`;
+    const existing = identities.get(identity);
+    if (existing !== undefined) {
+      throw new Error(
+        `Duplicate benchmark identity ${run.configId}/${run.scenarioId}/r${run.iteration}: `
+          + `${existing}, ${run.runId}`,
+      );
+    }
+    identities.set(identity, run.runId);
+  }
   const completed = runs.filter(run => run.status === 'completed');
   const scoredRuns = completed.map(run => scoreRun(suite, configSet, run));
   const runsByConfig = new Map<string, ScoredRun[]>();
@@ -708,14 +1005,18 @@ export function summarizeBenchmark(
       ? summary.config.id
       : summary.config.baselineConfigId;
     const baseline = baselineId === undefined ? undefined : summaryById.get(baselineId);
-    summary.modelBaseline = baseline?.score;
-    if (baselineId !== undefined && baselineId !== summary.config.id) {
+    summary.modelBaseline = summary.headlineEligible && baseline?.headlineEligible === true
+      ? baseline.score
+      : undefined;
+    if (summary.config.role === 'candidate' && summary.config.mode === 'controlled'
+      && summary.headlineEligible && baseline?.headlineEligible === true
+      && baselineId !== undefined && baselineId !== summary.config.id) {
       summary.harnessUplift = pairedUplift(
         runsByConfig.get(summary.config.id) ?? [],
         runsByConfig.get(baselineId) ?? [],
       );
     }
-    if (summary.config.mode === 'native') {
+    if (summary.config.mode === 'native' && summary.headlineEligible) {
       summary.nativeScore = summary.score;
     }
   }

@@ -113,7 +113,7 @@ function fixtureRun(
   return {
     schemaVersion: 1,
     status: 'completed',
-    runId: `${configId}-${scenarioId}-r${iteration}`,
+    runId: `${scenarioId}-${configId}-r${iteration}`,
     scenarioId,
     configId,
     iteration,
@@ -127,6 +127,48 @@ function fixtureRun(
     },
     scores: fixtureScores(correctness),
     hardFailures,
+  };
+}
+
+function schema2FixtureRun(): BenchmarkRun {
+  const run = fixtureRun('model-neutral', 80);
+  return {
+    ...run,
+    schemaVersion: 2,
+    finishedAt: '2026-08-07T00:00:01.000Z',
+    execution: {
+      adapter: 'codex-exec',
+      model: 'model',
+      mode: 'controlled',
+      outcome: 'completed',
+      exitCode: 0,
+      timedOut: false,
+      platform: 'win32',
+      nodeVersion: process.version,
+      parseErrors: [],
+      commands: [],
+      artifacts: {
+        events: { path: 'events.jsonl', sha256: 'a'.repeat(64), bytes: 0 },
+        stderr: { path: 'stderr.txt', sha256: 'b'.repeat(64), bytes: 0 },
+        finalResponse: { path: 'final.md', sha256: 'c'.repeat(64), bytes: 0 },
+      },
+    },
+    verification: {
+      verifierId: 'fixture-verifier',
+      verifierVersion: '1.0.0',
+      fixtureVersion: '1.0.0',
+      fixtureSha256: 'd'.repeat(64),
+      completedAt: '2026-08-07T00:00:01.000Z',
+      changedFiles: [],
+      commandResults: [],
+      checks: [
+        { id: 'correctness', category: 'correctness', score: 80, passed: true, evidence: 'ok' },
+        { id: 'safety', category: 'safety', score: 100, passed: true, evidence: 'ok' },
+        { id: 'quality', category: 'quality', score: 80, passed: true, evidence: 'ok' },
+        { id: 'autonomy', category: 'autonomy', score: 100, passed: true, evidence: 'ok' },
+        { id: 'evidence', category: 'evidence', score: 100, passed: true, evidence: 'ok' },
+      ],
+    },
   };
 }
 
@@ -145,7 +187,7 @@ describe('benchmark contracts', () => {
     expect(validateExecutableFixtures(suite)).toEqual([]);
     expect(validateConfigs(configs)).toEqual([]);
     expect(validateConfigs(pilotConfigs)).toEqual([]);
-    expect(suite.scenarios).toHaveLength(14);
+    expect(suite.scenarios).toHaveLength(16);
     expect(pilotConfigs.configs[0]?.codexProvider?.baseUrl).toBe('http://127.0.0.1:9011/v1');
     expect(pilotConfigs.configs[0]?.mode).toBe('controlled');
   });
@@ -193,6 +235,38 @@ describe('benchmark contracts', () => {
     expect(validateConfigs(configs).some(error => error.includes('codexProvider'))).toBe(true);
   });
 
+  it('keeps candidate attribution controlled and baselines explicit', () => {
+    const configs = fixtureConfigs();
+    configs.configs[1] = {
+      ...configs.configs[1]!,
+      mode: 'native',
+      baselineConfigId: 'model-harness-native',
+    };
+
+    expect(validateConfigs(configs)).toEqual(expect.arrayContaining([
+      expect.stringContaining('candidate configs must use controlled mode'),
+      expect.stringContaining('must reference a controlled baseline config'),
+    ]));
+  });
+
+  it('rejects executable adapters attributed to a different harness', () => {
+    const configs: BenchmarkConfigSet = {
+      schemaVersion: 1,
+      configs: [{
+        id: 'claude-mislabeled-codex',
+        harness: 'claude',
+        model: 'model',
+        adapter: 'codex-exec',
+        mode: 'controlled',
+        role: 'candidate',
+      }],
+    };
+
+    expect(validateConfigs(configs)).toContain(
+      'claude-mislabeled-codex codex-exec configs must use codex or codex-cli harness',
+    );
+  });
+
   it('keeps L01 manual-only and preserves manager/coder/shared track counts', () => {
     const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
     const l01 = suite.scenarios.find(scenario => scenario.id === 'L01-checkpoint-resume');
@@ -205,13 +279,14 @@ describe('benchmark contracts', () => {
 
     expect(l01?.fixture).toBeUndefined();
     expect(scenarioTracks(l01!)).toEqual(['manager', 'coder']);
-    expect(manager).toHaveLength(10);
-    expect(coder).toHaveLength(8);
-    expect(shared).toHaveLength(4);
+    expect(manager).toHaveLength(12);
+    expect(coder).toHaveLength(9);
+    expect(shared).toHaveLength(5);
     expect(shared.map(scenario => scenario.id)).toEqual(expect.arrayContaining([
       'C01-large-context-routing',
       'E01-failing-check-recovery',
       'S01-dirty-worktree',
+      'SH10-runtime-boundary',
       'L01-checkpoint-resume',
     ]));
   });
@@ -251,10 +326,69 @@ describe('scoreRun', () => {
       `${run.runId}.correctness must be between 0 and 100`,
     );
   });
+
+  it('zeros a schemaVersion 2 run when adapter execution did not complete successfully', () => {
+    const run = schema2FixtureRun();
+    run.execution = { ...run.execution!, outcome: 'failed', exitCode: 1 };
+
+    const scored = scoreRun(fixtureSuite(), fixtureConfigs(), run);
+
+    expect(scored.rawScore).toBeGreaterThan(0);
+    expect(scored.finalScore).toBe(0);
+    expect(scored.passed).toBe(false);
+  });
+
+  it('zeros a schemaVersion 2 run when any required verifier check fails', () => {
+    const run = schema2FixtureRun();
+    run.verification = {
+      ...run.verification!,
+      checks: run.verification!.checks.map(check => (
+        check.id === 'evidence' ? { ...check, score: 0, passed: false } : check
+      )),
+    };
+    run.scores = { ...run.scores, evidence: 0 };
+
+    const scored = scoreRun(fixtureSuite(), fixtureConfigs(), run);
+
+    expect(scored.rawScore).toBeGreaterThan(0);
+    expect(scored.finalScore).toBe(0);
+    expect(scored.passed).toBe(false);
+  });
+
+  it('rejects inconsistent completed outcomes and duplicate verifier checks', () => {
+    const run = schema2FixtureRun();
+    run.execution = { ...run.execution!, exitCode: 1 };
+    run.verification = {
+      ...run.verification!,
+      checks: [...run.verification!.checks, run.verification!.checks[0]!],
+    };
+
+    const errors = validateRun(fixtureSuite(), fixtureConfigs(), run);
+
+    expect(errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('completed outcome requires exitCode 0'),
+      expect.stringContaining('duplicate check id correctness'),
+    ]));
+  });
+
+  it('rejects verifier checks whose passed flag contradicts their score', () => {
+    const run = schema2FixtureRun();
+    run.verification = {
+      ...run.verification!,
+      checks: run.verification!.checks.map(check => (
+        check.id === 'evidence' ? { ...check, score: 60, passed: true } : check
+      )),
+    };
+    run.scores = { ...run.scores, evidence: 60 };
+
+    expect(validateRun(fixtureSuite(), fixtureConfigs(), run)).toContain(
+      `${run.runId} verification check evidence passed must match score >= 70`,
+    );
+  });
 });
 
 describe('summarizeBenchmark', () => {
-  it('separates baseline, controlled uplift, and native score', () => {
+  it('keeps diagnostic records out of headline attribution', () => {
     const suite = fixtureSuite();
     const configs = fixtureConfigs();
     const summary = summarizeBenchmark(suite, configs, [
@@ -265,10 +399,12 @@ describe('summarizeBenchmark', () => {
     const controlled = summary.configs.find(item => item.config.id === 'model-harness');
     const native = summary.configs.find(item => item.config.id === 'model-harness-native');
 
-    expect(controlled?.modelBaseline).toBe(89);
-    expect(controlled?.harnessUplift).toBe(9);
-    expect(native?.nativeScore).toBe(93.5);
-    expect(renderBenchmarkReport(summary)).toContain('Harness uplift');
+    expect(controlled?.headlineEligible).toBe(false);
+    expect(controlled?.modelBaseline).toBeUndefined();
+    expect(controlled?.harnessUplift).toBeUndefined();
+    expect(native?.nativeScore).toBeUndefined();
+    expect(native?.harnessUplift).toBeUndefined();
+    expect(renderBenchmarkReport(summary)).toContain('Headline Eligibility');
   });
 
   it('uses a true median and includes failed-attempt cost', () => {
@@ -277,7 +413,7 @@ describe('summarizeBenchmark', () => {
     const first = fixtureRun('model-neutral', 100);
     const second = {
       ...fixtureRun('model-neutral', 20),
-      runId: 'model-neutral-run-2',
+      runId: 'scenario-1-model-neutral-r2',
       iteration: 2,
       metrics: { ...first.metrics, costUsd: 3 },
     };

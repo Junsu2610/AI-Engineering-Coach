@@ -4,15 +4,16 @@ const HARNESS_URL = 'http://localhost:3999/tests/e2e/harness.html';
 
 async function navigateToOutput(page: Page) {
   await page.goto(HARNESS_URL);
-  await page.waitForFunction(() => {
-    const content = document.getElementById('content');
-    return content && content.innerHTML.length > 200 && !content.querySelector('.loading-spinner') && !content.querySelector('.error-boundary');
-  }, { timeout: 10000 });
-  await page.locator('[data-page="output"]').first().click();
-  await page.waitForFunction(() => {
-    const content = document.getElementById('content');
-    return content && !content.querySelector('.loading-spinner');
-  }, { timeout: 10000 });
+  await expect(page.locator('html')).toHaveAttribute('data-e2e-harness', 'app-loaded');
+  await expect(page.locator('canvas#dailyChart')).toBeVisible();
+
+  const outputLink = page.locator('.nav-links [data-page="output"]');
+  await outputLink.click();
+  await expect(outputLink).toHaveClass(/\bactive\b/);
+  await expect(page.locator('#output-tabs')).toBeVisible();
+  await expect(page.locator('canvas#prodModelChart')).toBeVisible();
+  await expect(page.locator('#content')).toContainText('AI-Generated LoC');
+  await expect(page.locator('#content .error-boundary')).toHaveCount(0);
 }
 
 test.describe('Output', () => {
@@ -33,33 +34,25 @@ test.describe('Output', () => {
   });
 
   test('shows language breakdown chart', async ({ page }) => {
-    // Production tab has language chart
-    const content = await page.textContent('#content');
-    expect(content).toContain('Language');
+    await expect(page.locator('canvas#prodLangChart')).toBeVisible();
   });
 
-  test('renders consumption tab with model totals', async ({ page }) => {
-    // Click consumption tab
-    const tabs = page.locator('#output-tabs .tab');
-    const consumptionTab = tabs.filter({ hasText: /consumption/i });
-    if (await consumptionTab.count() > 0) {
-      await consumptionTab.click();
-      await page.waitForFunction(() => {
-        const content = document.getElementById('content');
-        return content && !content.querySelector('.loading-spinner');
-      }, { timeout: 10000 });
-    }
-    const content = await page.textContent('#content');
-    expect(content).toContain('gpt-4o');
+  test('switches between model and harness production charts', async ({ page }) => {
+    const harnessTab = page.locator('[data-prod-tab="harness"]');
+    await harnessTab.click();
+    await expect(harnessTab).toHaveClass(/\bactive\b/);
+    await expect(page.locator('#prodTabHarness')).toHaveClass(/\bactive\b/);
+    await expect(page.locator('canvas#prodHarnessChart')).toBeVisible();
+
+    const modelTab = page.locator('[data-prod-tab="model"]');
+    await modelTab.click();
+    await expect(modelTab).toHaveClass(/\bactive\b/);
+    await expect(page.locator('#prodTabModel')).toHaveClass(/\bactive\b/);
   });
 
-  test('shows AI credits tab', async ({ page }) => {
-    const tabs = page.locator('#output-tabs .tab');
-    const creditsTab = tabs.filter({ hasText: /Credit/i });
-    await creditsTab.first().click();
-    await page.waitForTimeout(2000);
-    const content = await page.textContent('#content');
-    // totalCredits: 142.5 displayed as 143 (rounded)
-    expect(content).toMatch(/143|Total AI Credits/);
+  test('hides token usage while token reporting is disabled', async ({ page }) => {
+    await expect(page.locator('#output-tabs [data-tab="token-usage"]')).toHaveCount(0);
+    await expect(page.locator('.nav-links [data-page="burndown"]')).toHaveCount(0);
+    await expect(page.locator('#output-tabs .tab')).toHaveCount(1);
   });
 });

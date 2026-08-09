@@ -105,10 +105,12 @@ function resolveExecutionMode(harness) {
   if (CODEX_HARNESSES.has(harness)) {
     return CODEX_ADAPTER;
   }
-  if (CURSOR_HARNESSES.has(harness) || !CODEX_HARNESSES.has(harness)) {
+  if (CURSOR_HARNESSES.has(harness)) {
     return CURSOR_ADAPTER;
   }
-  return CURSOR_ADAPTER;
+  throw new Error(
+    `Unknown harness "${harness}". Supported harnesses: codex, codex-cli, cursor.`,
+  );
 }
 
 function buildConfig(parsed, executionMode, registry) {

@@ -263,6 +263,22 @@ describe('memory cache', () => {
 });
 
 describe('sidebar stats', () => {
+  it('uses the isolated test cache instead of the user profile cache', () => {
+    const cacheDir = process.env.AI_ENGINEER_COACH_CACHE_DIR;
+    expect(cacheDir).toBeTruthy();
+
+    const home = process.env.HOME || process.env.USERPROFILE;
+    if (home) {
+      const userCacheDir = path.resolve(home, '.copilot-analytics-cache');
+      const relative = path.relative(userCacheDir, path.resolve(cacheDir!));
+      expect(relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))).toBe(false);
+    }
+
+    const statsFile = path.join(cacheDir!, 'sidebar-stats.json');
+    saveSidebarStats({ harnesses: ['Test Agent'], savedAt: 1 });
+    expect(fs.existsSync(statsFile)).toBe(true);
+  });
+
   it('saveSidebarStats and loadSidebarStats round-trip', () => {
     const stats = { harnesses: ['Local Agent', 'Xcode'], savedAt: Date.now() };
     saveSidebarStats(stats);

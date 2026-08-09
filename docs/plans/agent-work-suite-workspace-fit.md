@@ -30,7 +30,7 @@ Ground the 19-task Agent Work Suite in **how this operator actually works** acro
 |---|---|---|
 | `9Router`, `ai-shared`, `librechat`, `vaultwarden` | Docker Compose + NAS deploy | Config overlays, `ops-remote-nas.md`, SSH compose — **no fork upstream** |
 | `AI Engineering Coach` | VS Code extension + workers | Worker boundaries, read-only logs, `npm run check` |
-| `twinagent`, `aicrypto` | FastAPI + frontend + private data | Never commit exports/secrets; twinsync / manual Excel truth |
+| `twinagent`, `aicrypto` | FastAPI + frontend + private data | Never commit exports/secrets; private-data sync / manual Excel truth |
 | `RB_Member`, `WH_Member` | Next.js HR + Excel seed | Clone patterns, `seed:all`, one-file-per-person |
 | `Translate-tool`, `MediaTool` | Desktop / PowerShell tooling | typecheck/test gates, Windows-specific scripts |
 | `Money Flow AI` | Excel/VBA | Authority on workbook contracts before behavior change |

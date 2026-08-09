@@ -316,10 +316,11 @@
     "typecheck": "tsc --noEmit",
     "check:harness": "node scripts/check-agents-budget.mjs",
     "check:docs": "npm run spellcheck && npm run check:harness",
-    "check": "run-p typecheck lint spellcheck knip lockfile-lint && run-s test check:harness",
+    "check": "run-p typecheck lint spellcheck knip lockfile-lint && run-s test:coverage check:harness",
     "check-size": "node scripts/check-bundle-size.mjs",
-    "test:e2e": "npx playwright test",
-    "lockfile-lint": "lockfile-lint",
+    "test:e2e": "npm run build && npm run test:e2e:built",
+    "test:e2e:built": "playwright test",
+    "lockfile-lint": "lockfile-lint --path package-lock.json --type npm --allowed-schemes https: --allowed-hosts npm --validate-package-names --validate-integrity --empty-hostname false",
     "prepare": "husky"
   },
   "lint-staged": {

@@ -3,13 +3,18 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve, basename } from 'node:path';
+import { createHash } from 'node:crypto';
+import {
+  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync,
+} from 'node:fs';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
   FULL_SCENARIO_IDS,
+  PILOT_VERIFIER_VERSION,
   PILOT_SCENARIO_IDS,
+  fixtureSha256ForScenario,
   prepareCursorSession,
   runPilotScenario,
   validateExecutableFixtures,
@@ -36,10 +41,16 @@ import type {
 const DEFAULT_SUITE_PATH = 'benchmarks/model-harness-suite.json';
 const DEFAULT_CONFIG_PATH = 'benchmarks/configs.example.json';
 const PILOT_CONFIG_PATH = 'benchmarks/configs.codex-sol-ultra.json';
+const fixtureHashCache = new Map<string, string>();
 
 function readJson<T>(path: string): T {
-  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
-  return parsed as T;
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+    return parsed as T;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Unable to read JSON ${path}: ${message}`, { cause: error });
+  }
 }
 
 function isRunRecord(value: unknown): value is BenchmarkRun {
@@ -47,12 +58,104 @@ function isRunRecord(value: unknown): value is BenchmarkRun {
     return false;
   }
   const record = value as Record<string, unknown>;
-  return typeof record.runId === 'string'
+  return (record.schemaVersion === 1 || record.schemaVersion === 2)
+    && typeof record.runId === 'string'
     && typeof record.scenarioId === 'string'
     && typeof record.configId === 'string'
-    && typeof record.status === 'string'
+    && (record.status === 'draft' || record.status === 'completed')
+    && typeof record.metrics === 'object'
+    && record.metrics !== null
     && typeof record.scores === 'object'
-    && record.scores !== null;
+    && record.scores !== null
+    && Array.isArray(record.hardFailures);
+}
+
+interface LoadedRun {
+  path: string;
+  run: BenchmarkRun;
+}
+
+function isPathWithin(root: string, candidate: string): boolean {
+  const relativePath = relative(root, candidate);
+  return relativePath.length > 0
+    && !isAbsolute(relativePath)
+    && relativePath !== '..'
+    && !relativePath.startsWith(`..${sep}`);
+}
+
+function validateRunArtifacts(runPath: string, run: BenchmarkRun): string[] {
+  if (run.schemaVersion !== 2) {
+    return [];
+  }
+  const errors: string[] = [];
+  const runDirectory = realpathSync(dirname(resolve(runPath)));
+  for (const artifactName of ['events', 'stderr', 'finalResponse'] as const) {
+    const artifact = run.execution?.artifacts?.[artifactName];
+    if (typeof artifact !== 'object' || artifact === null || typeof artifact.path !== 'string') {
+      continue;
+    }
+    const candidate = resolve(runDirectory, artifact.path);
+    if (!isPathWithin(runDirectory, candidate)) {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName}.path escapes the run directory`);
+      continue;
+    }
+    let file: ReturnType<typeof lstatSync>;
+    try {
+      file = lstatSync(candidate);
+    } catch {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName} file is missing: ${artifact.path}`);
+      continue;
+    }
+    if (file.isSymbolicLink()) {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName} must not be a symbolic link`);
+      continue;
+    }
+    if (!file.isFile()) {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName} must be a regular file`);
+      continue;
+    }
+    const realCandidate = realpathSync(candidate);
+    if (!isPathWithin(runDirectory, realCandidate)) {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName} resolves outside the run directory`);
+      continue;
+    }
+    if (Number.isInteger(artifact.bytes) && file.size !== artifact.bytes) {
+      errors.push(`${run.runId}.execution.artifacts.${artifactName}.bytes does not match the file`);
+    }
+    if (typeof artifact.sha256 === 'string' && /^[a-f0-9]{64}$/i.test(artifact.sha256)) {
+      const digest = createHash('sha256').update(readFileSync(candidate)).digest('hex');
+      if (digest.toLowerCase() !== artifact.sha256.toLowerCase()) {
+        errors.push(`${run.runId}.execution.artifacts.${artifactName}.sha256 does not match the file`);
+      }
+    }
+  }
+  return errors;
+}
+
+function currentVerifierErrors(suite: BenchmarkSuite, run: BenchmarkRun): string[] {
+  if (run.schemaVersion !== 2) {
+    return [];
+  }
+  const scenario = suite.scenarios.find(candidate => candidate.id === run.scenarioId);
+  if (scenario?.fixture === undefined || run.verification === undefined) {
+    return [];
+  }
+  const errors: string[] = [];
+  if (run.verification.verifierVersion !== PILOT_VERIFIER_VERSION) {
+    errors.push(
+      `${run.runId} verifier version ${run.verification.verifierVersion} is stale; `
+        + `current version is ${PILOT_VERIFIER_VERSION}`,
+    );
+  }
+  let currentFixtureHash = fixtureHashCache.get(run.scenarioId);
+  if (currentFixtureHash === undefined) {
+    currentFixtureHash = fixtureSha256ForScenario(run.scenarioId);
+    fixtureHashCache.set(run.scenarioId, currentFixtureHash);
+  }
+  if (run.verification.fixtureSha256 !== currentFixtureHash) {
+    errors.push(`${run.runId} fixture SHA-256 does not match the current fixture`);
+  }
+  return errors;
 }
 
 function readFlag(args: string[], flag: string): string | undefined {
@@ -81,10 +184,11 @@ function loadContracts(
 }
 
 function contractErrors(suite: BenchmarkSuite, configs: BenchmarkConfigSet): string[] {
+  const suiteErrors = validateSuite(suite);
   return [
-    ...validateSuite(suite),
+    ...suiteErrors,
     ...validateConfigs(configs),
-    ...validateExecutableFixtures(suite),
+    ...(suiteErrors.length === 0 ? validateExecutableFixtures(suite) : []),
   ];
 }
 
@@ -101,7 +205,11 @@ function collectJsonFiles(path: string): string[] {
   }
   if (!statSync(path).isDirectory()) {
     const name = basename(path);
-    return name.endsWith('.json') && !/-report\.json$/i.test(name) ? [path] : [];
+    return name.endsWith('.json')
+      && !/-report\.json$/i.test(name)
+      && !/\.session\.json$/i.test(name)
+      ? [path]
+      : [];
   }
   return readdirSync(path, { withFileTypes: true }).flatMap(entry => {
     const child = join(path, entry.name);
@@ -111,15 +219,33 @@ function collectJsonFiles(path: string): string[] {
     return entry.isFile()
       && entry.name.endsWith('.json')
       && !/-report\.json$/i.test(entry.name)
+      && !/\.session\.json$/i.test(entry.name)
       ? [child]
       : [];
   });
 }
 
-function loadRuns(path: string): BenchmarkRun[] {
+function loadRuns(path: string): LoadedRun[] {
   return collectJsonFiles(path)
-    .map(file => readJson<unknown>(file))
-    .filter(isRunRecord);
+    .map(file => {
+      const value = readJson<unknown>(file);
+      if (!isRunRecord(value)) {
+        throw new Error(`${file} is not a benchmark run record`);
+      }
+      return { path: file, run: value };
+    });
+}
+
+function loadedRunErrors(
+  suite: BenchmarkSuite,
+  configs: BenchmarkConfigSet,
+  loaded: LoadedRun,
+): string[] {
+  return [
+    ...validateRun(suite, configs, loaded.run),
+    ...validateRunArtifacts(loaded.path, loaded.run),
+    ...currentVerifierErrors(suite, loaded.run),
+  ].map(error => `${loaded.path}: ${error}`);
 }
 
 function validateCommand(args: string[]): void {
@@ -127,8 +253,8 @@ function validateCommand(args: string[]): void {
   const errors = contractErrors(suite, configs);
   const runsPath = readFlag(args, '--runs');
   if (runsPath !== undefined) {
-    for (const run of loadRuns(resolve(runsPath))) {
-      errors.push(...validateRun(suite, configs, run));
+    for (const loaded of loadRuns(resolve(runsPath))) {
+      errors.push(...loadedRunErrors(suite, configs, loaded));
     }
   }
   if (errors.length > 0) {
@@ -223,7 +349,25 @@ function readCommands(args: string[]): CommandExecutionEvidence[] | undefined {
   if (!Array.isArray(parsed)) {
     throw new Error('--commands-file must contain a JSON array');
   }
-  return parsed as CommandExecutionEvidence[];
+  return parsed.map((candidate, index) => {
+    if (typeof candidate !== 'object' || candidate === null) {
+      throw new Error(`--commands-file entry ${index} must be an object`);
+    }
+    const command = candidate as Record<string, unknown>;
+    if (typeof command.id !== 'string' || command.id.trim().length === 0
+      || typeof command.command !== 'string' || command.command.trim().length === 0) {
+      throw new Error(`--commands-file entry ${index} requires non-empty id and command strings`);
+    }
+    if (command.status !== undefined
+      && (typeof command.status !== 'string' || command.status.trim().length === 0)) {
+      throw new Error(`--commands-file entry ${index} has invalid status`);
+    }
+    if (command.exitCode !== undefined
+      && (!Number.isInteger(command.exitCode) || (command.exitCode as number) < 0)) {
+      throw new Error(`--commands-file entry ${index} has invalid exitCode`);
+    }
+    return command as unknown as CommandExecutionEvidence;
+  });
 }
 
 function isCursorSessionConfig(configs: BenchmarkConfigSet, configId: string): boolean {
@@ -390,8 +534,16 @@ export function loadReusableFullRun(
   if (!existsSync(path)) {
     return undefined;
   }
-  const run = readJson<BenchmarkRun>(path);
-  const errors = validateRun(suite, configs, run);
+  const value = readJson<unknown>(path);
+  if (!isRunRecord(value)) {
+    throw new Error(`${path} is not a benchmark run record`);
+  }
+  const run = value;
+  const errors = [
+    ...validateRun(suite, configs, run),
+    ...validateRunArtifacts(path, run),
+    ...currentVerifierErrors(suite, run),
+  ];
   if (run.schemaVersion !== 2) {
     errors.push(`${runId} must be a schemaVersion 2 executable run`);
   }
@@ -461,17 +613,21 @@ async function fullCommand(args: string[]): Promise<void> {
       console.log('Created ' + result.runPath);
     }
   }
-  const reportRuns = loadRuns(resultsRoot).filter(run => (
-    run.status === 'completed'
-    && (run.schemaVersion === 1 || run.schemaVersion === 2)
-  ));
-  const reportErrors = reportRuns.flatMap(run => validateRun(suite, configs, run));
-  if (reportErrors.length > 0) {
-    throw new Error(reportErrors.join('\n'));
-  }
-  if (reportRuns.length === 0) {
-    throw new Error(`No compatible completed run records found under ${resultsRoot}`);
-  }
+  const reportRuns = Array.from({ length: iterations }, (_, index) => index + 1)
+    .flatMap(iteration => selectedScenarioIds.map(scenarioId => {
+      const reusable = loadReusableFullRun(
+        suite,
+        configs,
+        resultsRoot,
+        scenarioId,
+        configId,
+        iteration,
+      );
+      if (reusable === undefined) {
+        throw new Error(`Missing completed run for ${scenarioId} iteration ${iteration}`);
+      }
+      return reusable.run;
+    }));
   const summary = summarizeBenchmark(suite, configs, reportRuns);
   const reportPath = join(resultsRoot, 'full-report.md');
   const jsonPath = join(resultsRoot, 'full-report.json');
@@ -488,7 +644,16 @@ function scoreCommand(args: string[]): void {
   const { suite, configs } = loadContracts(args);
   assertContracts(suite, configs);
   const runPath = resolve(requiredFlag(args, '--run'));
-  const scored = scoreRun(suite, configs, readJson<BenchmarkRun>(runPath));
+  const value = readJson<unknown>(runPath);
+  if (!isRunRecord(value)) {
+    throw new Error(`${runPath} is not a benchmark run record`);
+  }
+  const run = value;
+  const artifactErrors = validateRunArtifacts(runPath, run);
+  if (artifactErrors.length > 0) {
+    throw new Error(artifactErrors.join('\n'));
+  }
+  const scored = scoreRun(suite, configs, run);
   console.log(JSON.stringify(scored, undefined, 2));
 }
 
@@ -496,11 +661,12 @@ function reportCommand(args: string[]): void {
   const { suite, configs } = loadContracts(args);
   assertContracts(suite, configs);
   const runsPath = resolve(requiredFlag(args, '--runs'));
-  const runs = loadRuns(runsPath);
-  if (runs.length === 0) {
+  const loadedRuns = loadRuns(runsPath);
+  if (loadedRuns.length === 0) {
     throw new Error(`No run JSON files found under ${runsPath}`);
   }
-  const runErrors = runs.flatMap(run => validateRun(suite, configs, run));
+  const runs = loadedRuns.map(loaded => loaded.run);
+  const runErrors = loadedRuns.flatMap(loaded => loadedRunErrors(suite, configs, loaded));
   if (runErrors.length > 0) {
     throw new Error(runErrors.join('\n'));
   }

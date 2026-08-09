@@ -21,14 +21,22 @@ eslint.config.mjs
 **/*.map
 *.vsix
 dist/**/*.map
+coverage/**
+playwright-report/**
 
-# Docs scaffolding (only publish README + LICENSE + dist)
+# Repository-only docs and metadata
 README.github.md
 SECURITY.md
+CODEOWNERS
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
 
 # Dev-only config & tooling — not needed at runtime
 .husky/**
 .devcontainer/**
+.cspellcache
+.eslintcache
+.gitattributes
 cspell.json
 knip.json
 playwright.config.ts
@@ -38,8 +46,43 @@ playwright.config.ts
 # Marketing assets are for the repo / store listing, not the shipped bundle
 marketing/**
 
-# Benchmark / perf outputs
+# Benchmark, test, and private workspace data
 benchmark-*.json
+benchmarks/**
+test-results/**
+summary/**
+Comment/**
+teamagent/**
+skills/**
+
+# Agent configuration and project governance
+.agents/**
+.claude/**
+.codex/**
+.cursor/**
+AGENTS.md
+WORKFLOW.md
+SUPPORT.md
+PROJECT_GOAL.md
+README.extension.md
+
+# Environment and secret files
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+id_ed25519
+id_rsa
+**/id_ed25519
+**/id_rsa
 
 # Runtime deps are bundled into dist/ by esbuild — ship the bundle, not node_modules
 node_modules/**

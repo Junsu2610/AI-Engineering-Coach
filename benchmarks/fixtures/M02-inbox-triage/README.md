@@ -1,11 +1,11 @@
-# M02-inbox-triage (stub)
+# M02-inbox-triage
 
 **V1 lane**: Manager **M02** — Triage mixed signals; no code edits.
 
-**Status**: Workspace stub only. Verifier not registered in `src/benchmark/pilot.ts` or `model-harness-suite.json`.
+**Status**: Registered executable manager fixture with a local hidden verifier.
 
 **Workspace pattern**: `00_Manager` inbox + registry-driven prioritization across faux multi-project workspace.
 
 **Agent deliverable**: `MANAGER_TRIAGE.md` only.
 
-**Next implementation step**: Add `verifyM02`, suite scenario entry, and scoring checks per `docs/plans/agent-work-suite-workspace-fit.md`.
+The verifier requires a priority-ordered queue, lane/dependency labels, per-item verification hints, registry evidence, and an explicit analysis-only boundary while allowing only `MANAGER_TRIAGE.md` to change.
