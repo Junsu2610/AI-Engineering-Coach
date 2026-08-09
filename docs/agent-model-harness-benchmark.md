@@ -60,6 +60,58 @@ Copy [`benchmarks/configs.example.json`](../benchmarks/configs.example.json) and
 
 The example includes Codex, Claude, Cursor, and Antigravity configurations using the same model identifier. Remove combinations that are not actually available rather than simulating them. The checked-in `codex-exec` adapter supports controlled mode only; native configurations must use a native-capable adapter or a manual run record. This prevents a controlled run from being mislabeled as a native score.
 
+## Slash command
+
+In Cursor, run:
+
+```text
+/benchmark <harness> <modelEffort>
+```
+
+Examples:
+
+- `/benchmark cursor grok4.5high` — harness `cursor` (current Cursor agent session), model `grok-4.5`, effort `high`.
+- `/benchmark codex gpt-5.6-sol-ultra` — harness `codex` (Codex CLI via 9Router), model `gpt-5.6-sol`, effort `ultra`.
+
+The slash command runs `node scripts/benchmark-model.mjs` (also available as `npm run benchmark:model -- …`), which:
+
+- parses effort from the end of `<modelEffort>` (`low`, `medium`, `high`, `xhigh`, `max`, `ultra`; default `high`);
+- upserts harness, model, effort, `executionMode`, and paths into [`benchmarks/models.json`](../benchmarks/models.json);
+- writes a dedicated configs file under `benchmarks/configs.*.json`;
+- prints run instructions for the selected harness.
+
+### Cursor harness (`executionMode: cursor-session`)
+
+Harness `cursor` runs **inside the current Cursor agent session**. Model and effort are recorded for attribution only. No 9Router, no `OPENAI_API_KEY`, and no Codex CLI.
+
+Agent loop per scenario:
+
+```powershell
+npm run benchmark:agents -- prepare --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-3x
+# complete the printed prompt in the prepared workspace
+npm run benchmark:agents -- verify --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-3x --final-message "Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected."
+```
+
+Pilot scenarios: `U01-root-cause-no-edit`, `F01-surgical-boundary-fix`, `S01-dirty-worktree`.
+
+After all scenarios are verified, aggregate:
+
+```powershell
+npm run benchmark:agents -- full --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --track all --iterations 3 --results benchmarks/results/cursor-grok-4-5-high-full-3x
+```
+
+`full` for cursor-session configs only reuses completed schemaVersion 2 runs and builds the report; it does not invoke Codex.
+
+### Codex harness (`executionMode: codex-exec`)
+
+Harness `codex` (or `codex-cli`) keeps the controlled `codex-exec` adapter through 9Router at `http://127.0.0.1:9011/v1`.
+
+```powershell
+npm run benchmark:agents -- full --configs benchmarks/configs.codex-gpt-5-6-sol-ultra.json --config codex-gpt-5.6-sol-controlled-ultra --track all --iterations 3 --results benchmarks/results/codex-gpt-5-6-sol-ultra-full-3x
+```
+
+Command definition: [`.cursor/commands/benchmark.md`](../.cursor/commands/benchmark.md).
+
 ## Commands
 
 Validate the suite and configuration matrix:
@@ -139,7 +191,7 @@ npm run benchmark:agents -- full `
 
 Use `--track manager` or `--track coder` to run one scenario track. The report includes overall score plus separate **Manager** and **Coder scenario-track** rows with scenario coverage, success rate, category scores, hard failures, and latency. Shared scenarios are counted in both tracks. These are task-track scores, not inferred internal subagent roles; the controlled Codex JSONL does not expose manager/coder attribution.
 
-The `full` command is resumable. It reuses an existing valid schema-version-2 run for the same scenario, configuration, and iteration, then rebuilds `full-report.md` and `full-report.json` from every compatible run under the selected result root. This permits an interrupted run, or separate Manager and Coder invocations, to continue in the same dedicated root without overwriting completed evidence. Prefer `--track all` for a single complete automated pass.
+The `full` command is resumable. It reuses an existing valid schema-version-2 run for the same scenario, configuration, and iteration, then rebuilds `full-report.md` and `full-report.json` from every compatible completed run under the selected result root. Report JSON files named `*-report.json` are ignored during aggregation. This permits an interrupted run, or separate Manager and Coder invocations, to continue in the same dedicated root without overwriting completed evidence. Prefer `--track all` for a single complete automated pass. Add `--keep-workspace` only when debugging a failed run.
 
 For a multi-configuration comparison, use one dedicated result root and the same matrix file for every invocation, then regenerate the combined report explicitly:
 

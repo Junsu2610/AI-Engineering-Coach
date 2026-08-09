@@ -4,14 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
   FULL_SCENARIO_IDS,
   PILOT_SCENARIO_IDS,
+  prepareCursorSession,
   runPilotScenario,
   validateExecutableFixtures,
+  verifyCursorSession,
 } from './pilot';
 import { renderBenchmarkReport } from './report';
 import {
@@ -27,6 +29,7 @@ import type {
   BenchmarkRun,
   BenchmarkSuite,
   BenchmarkTrack,
+  CommandExecutionEvidence,
   RunCategoryScores,
 } from './types';
 
@@ -40,10 +43,16 @@ function readJson<T>(path: string): T {
 }
 
 function isRunRecord(value: unknown): value is BenchmarkRun {
-  return typeof value === 'object'
-    && value !== null
-    && 'runId' in value
-    && typeof value.runId === 'string';
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return typeof record.runId === 'string'
+    && typeof record.scenarioId === 'string'
+    && typeof record.configId === 'string'
+    && typeof record.status === 'string'
+    && typeof record.scores === 'object'
+    && record.scores !== null;
 }
 
 function readFlag(args: string[], flag: string): string | undefined {
@@ -91,14 +100,19 @@ function collectJsonFiles(path: string): string[] {
     throw new Error(`Runs path does not exist: ${path}`);
   }
   if (!statSync(path).isDirectory()) {
-    return path.endsWith('.json') ? [path] : [];
+    const name = basename(path);
+    return name.endsWith('.json') && !/-report\.json$/i.test(name) ? [path] : [];
   }
   return readdirSync(path, { withFileTypes: true }).flatMap(entry => {
     const child = join(path, entry.name);
     if (entry.isDirectory()) {
       return collectJsonFiles(child);
     }
-    return entry.isFile() && entry.name.endsWith('.json') ? [child] : [];
+    return entry.isFile()
+      && entry.name.endsWith('.json')
+      && !/-report\.json$/i.test(entry.name)
+      ? [child]
+      : [];
   });
 }
 
@@ -188,6 +202,86 @@ function integerFlag(args: string[], flag: string, fallback: number): number {
   return value;
 }
 
+function readFinalMessage(args: string[]): string {
+  const inline = readFlag(args, '--final-message');
+  if (inline !== undefined) {
+    return inline;
+  }
+  const filePath = readFlag(args, '--final-message-file');
+  if (filePath !== undefined) {
+    return readFileSync(resolve(filePath), 'utf8');
+  }
+  throw new Error('Missing required flag --final-message or --final-message-file');
+}
+
+function readCommands(args: string[]): CommandExecutionEvidence[] | undefined {
+  const filePath = readFlag(args, '--commands-file');
+  if (filePath === undefined) {
+    return undefined;
+  }
+  const parsed: unknown = JSON.parse(readFileSync(resolve(filePath), 'utf8'));
+  if (!Array.isArray(parsed)) {
+    throw new Error('--commands-file must contain a JSON array');
+  }
+  return parsed as CommandExecutionEvidence[];
+}
+
+function isCursorSessionConfig(configs: BenchmarkConfigSet, configId: string): boolean {
+  const config = configs.configs.find(candidate => candidate.id === configId);
+  return config?.adapter === 'cursor-session';
+}
+
+function pendingCursorSessionMessage(
+  resultsRoot: string,
+  configId: string,
+  scenarioId: string,
+  iteration: number,
+): string | undefined {
+  const runId = `${scenarioId}-${configId}-r${iteration}`;
+  const manifestPath = join(resultsRoot, configId, `${runId}.session.json`);
+  if (existsSync(manifestPath)) {
+    return `Pending cursor-session verify for ${scenarioId} iteration ${iteration}. `
+      + 'Complete the prepared workspace, then run verify.';
+  }
+  return `Missing completed run for ${scenarioId} iteration ${iteration}. `
+    + 'Run prepare, complete the task in the workspace, then verify.';
+}
+
+function prepareCommand(args: string[]): void {
+  const { suite, configs } = loadContracts(args);
+  assertContracts(suite, configs);
+  const result = prepareCursorSession(suite, configs, {
+    scenarioId: requiredFlag(args, '--scenario'),
+    configId: requiredFlag(args, '--config'),
+    iteration: integerFlag(args, '--iteration', 1),
+    resultsRoot: readFlag(args, '--results'),
+  });
+  console.log(`Prepared ${result.runId}`);
+  console.log(`Workspace: ${result.workspace}`);
+  console.log(`Manifest: ${result.manifestPath}`);
+  console.log(`Prompt: ${result.prompt}`);
+}
+
+function verifyCommand(args: string[]): void {
+  const { suite, configs } = loadContracts(args);
+  assertContracts(suite, configs);
+  const result = verifyCursorSession(suite, configs, {
+    scenarioId: requiredFlag(args, '--scenario'),
+    configId: requiredFlag(args, '--config'),
+    iteration: integerFlag(args, '--iteration', 1),
+    resultsRoot: readFlag(args, '--results'),
+    finalMessage: readFinalMessage(args),
+    commands: readCommands(args),
+    keepWorkspace: args.includes('--keep-workspace'),
+  });
+  const scored = scoreRun(suite, configs, result.run);
+  console.log(`Created ${result.runPath}`);
+  console.log(`Score: ${scored.finalScore}; passed: ${scored.passed}`);
+  if (result.workspacePath !== undefined) {
+    console.log(`Kept workspace: ${result.workspacePath}`);
+  }
+}
+
 async function runCommand(args: string[]): Promise<void> {
   const { suite, configs } = loadContracts(args, PILOT_CONFIG_PATH);
   assertContracts(suite, configs);
@@ -219,8 +313,26 @@ async function pilotCommand(args: string[]): Promise<void> {
     throw new Error(`--iterations must not exceed suite repetitions (${suite.repetitions})`);
   }
   const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
+  const cursorSession = isCursorSessionConfig(configs, configId);
+  const runs: BenchmarkRun[] = [];
   for (let iteration = 1; iteration <= iterations; iteration += 1) {
     for (const scenarioId of PILOT_SCENARIO_IDS) {
+      if (cursorSession) {
+        const reusable = loadReusableFullRun(
+          suite,
+          configs,
+          resultsRoot,
+          scenarioId,
+          configId,
+          iteration,
+        );
+        if (reusable !== undefined) {
+          runs.push(reusable.run);
+          console.log(`Reusing ${reusable.path}`);
+          continue;
+        }
+        throw new Error(pendingCursorSessionMessage(resultsRoot, configId, scenarioId, iteration));
+      }
       console.log(`Running ${scenarioId} iteration ${iteration}...`);
       const result = await runPilotScenario(suite, configs, {
         scenarioId,
@@ -316,6 +428,7 @@ async function fullCommand(args: string[]): Promise<void> {
     throw new Error('No executable scenarios found for track ' + track);
   }
   const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
+  const cursorSession = isCursorSessionConfig(configs, configId);
   for (let iteration = 1; iteration <= iterations; iteration += 1) {
     for (const scenarioId of selectedScenarioIds) {
       const reusable = loadReusableFullRun(
@@ -329,6 +442,9 @@ async function fullCommand(args: string[]): Promise<void> {
       if (reusable !== undefined) {
         console.log('Reusing ' + reusable.path);
         continue;
+      }
+      if (cursorSession) {
+        throw new Error(pendingCursorSessionMessage(resultsRoot, configId, scenarioId, iteration));
       }
       console.log('Running ' + scenarioId + ' iteration ' + iteration + '...');
       const result = await runPilotScenario(suite, configs, {
@@ -345,10 +461,16 @@ async function fullCommand(args: string[]): Promise<void> {
       console.log('Created ' + result.runPath);
     }
   }
-  const reportRuns = loadRuns(resultsRoot);
+  const reportRuns = loadRuns(resultsRoot).filter(run => (
+    run.status === 'completed'
+    && (run.schemaVersion === 1 || run.schemaVersion === 2)
+  ));
   const reportErrors = reportRuns.flatMap(run => validateRun(suite, configs, run));
   if (reportErrors.length > 0) {
     throw new Error(reportErrors.join('\n'));
+  }
+  if (reportRuns.length === 0) {
+    throw new Error(`No compatible completed run records found under ${resultsRoot}`);
   }
   const summary = summarizeBenchmark(suite, configs, reportRuns);
   const reportPath = join(resultsRoot, 'full-report.md');
@@ -410,11 +532,18 @@ Common contract flags: [--suite FILE] [--configs FILE]
 Commands:
   validate [--suite FILE] [--configs FILE] [--runs PATH]
   template --scenario ID --config ID --iteration N [--out FILE]
-  run --scenario ID --config ID [--iteration N] [--results DIR] [--timeout-ms N]
-  pilot --config ID [--iterations N] [--results DIR] [--timeout-ms N]
-  full --config ID [--track manager|coder|all] [--iterations N] [--results DIR] [--timeout-ms N]
+  prepare --scenario ID --config ID [--iteration N] [--results DIR]
+  verify --scenario ID --config ID [--iteration N] [--results DIR] (--final-message TEXT | --final-message-file FILE) [--commands-file FILE] [--keep-workspace]
+  run --scenario ID --config ID [--iteration N] [--results DIR] [--timeout-ms N] [--keep-workspace] [--codex-bin PATH]
+  pilot --config ID [--iterations N] [--results DIR] [--timeout-ms N] [--keep-workspace] [--codex-bin PATH]
+  full --config ID [--track manager|coder|all] [--iterations N] [--results DIR] [--timeout-ms N] [--keep-workspace] [--codex-bin PATH]
   score --run FILE
   report --runs PATH [--out FILE] [--json-out FILE]
+
+Notes:
+  - cursor-session configs use prepare/verify in the current Cursor agent; no 9Router.
+  - codex-exec configs use Codex CLI through 9Router. L01-checkpoint-resume is manual-only.
+  - full reuses compatible schemaVersion 2 runs under --results and aggregates completed records.
 `);
 }
 
@@ -424,6 +553,10 @@ export async function main(): Promise<void> {
     validateCommand(args);
   } else if (command === 'template') {
     templateCommand(args);
+  } else if (command === 'prepare') {
+    prepareCommand(args);
+  } else if (command === 'verify') {
+    verifyCommand(args);
   } else if (command === 'run') {
     await runCommand(args);
   } else if (command === 'pilot') {

@@ -175,8 +175,15 @@ export function validateConfigs(configSet: BenchmarkConfigSet): string[] {
     if (config.role === 'native' && config.mode !== 'native') {
       errors.push(`${config.id} native configs must use native mode`);
     }
-    if (config.adapter !== undefined && !['manual', 'codex-exec'].includes(config.adapter)) {
+    if (config.adapter !== undefined
+      && !['manual', 'codex-exec', 'cursor-session'].includes(config.adapter)) {
       errors.push(`${config.id} has invalid adapter ${String(config.adapter)}`);
+    }
+    if (config.adapter === 'cursor-session' && config.codexProvider !== undefined) {
+      errors.push(`${config.id} cursor-session configs must not declare codexProvider`);
+    }
+    if (config.adapter === 'cursor-session' && config.reasoningEffort === undefined) {
+      errors.push(`${config.id} cursor-session configs require reasoningEffort`);
     }
     if (config.reasoningEffort !== undefined
       && !['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(config.reasoningEffort)) {
@@ -357,7 +364,7 @@ function validateExecution(execution: BenchmarkExecution | undefined, run: Bench
     return [`${run.runId}.execution is required for schemaVersion 2`];
   }
   const errors: string[] = [];
-  if (!['manual', 'codex-exec'].includes(execution.adapter)) {
+  if (!['manual', 'codex-exec', 'cursor-session'].includes(execution.adapter)) {
     errors.push(`${run.runId}.execution.adapter is invalid`);
   }
   if (!['controlled', 'native'].includes(execution.mode)) {
@@ -531,7 +538,10 @@ export function scoreRun(
     throw new Error(`Unable to resolve scenario or config for ${run.runId}`);
   }
   const efficiency = scoreEfficiency(run, scenario);
-  const requiredCoverage = suite.minimumEfficiencyCoverage ?? 0;
+  const defaultCoverage = suite.minimumEfficiencyCoverage ?? 0;
+  const requiredCoverage = run.execution?.adapter === 'cursor-session'
+    ? Math.min(defaultCoverage, EFFICIENCY_METRIC_WEIGHTS.durationMs)
+    : defaultCoverage;
   const meetsEfficiencyCoverage = efficiency.coverage >= requiredCoverage;
   const categoryScores: ScoreWeights = { ...run.scores, efficiency: efficiency.score };
   const rawScore = SCORE_CATEGORIES.reduce(

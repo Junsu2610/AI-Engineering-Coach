@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { CodexExecOptions, CodexExecResult } from './codex-exec';
-import { runPilotScenario } from './pilot';
+import { prepareCursorSession, runPilotScenario, verifyCursorSession } from './pilot';
 import { scoreRun } from './scoring';
 import type { BenchmarkConfigSet, BenchmarkSuite, CommandExecutionEvidence } from './types';
 
@@ -336,5 +336,128 @@ Sum the raw line totals first and round only once after the final subtotal.
       resultsRoot,
       adapter: async () => executionResult('', []),
     })).rejects.toThrow('only supports controlled mode');
+  });
+
+  it('refuses the manual-only L01 scenario in the executable pilot path', async () => {
+    await expect(runPilotScenario(suite, configs, {
+      scenarioId: 'L01-checkpoint-resume',
+      configId,
+      iteration: 1,
+      resultsRoot,
+      adapter: async () => executionResult('', []),
+    })).rejects.toThrow('does not have an executable pilot fixture');
+  });
+
+  it('redacts configured provider credentials from persisted artifacts', async () => {
+    const previous = process.env.OPENAI_API_KEY;
+    const credential = 'provider-secret-value-12345';
+    process.env.OPENAI_API_KEY = credential;
+    try {
+      const result = await runPilotScenario(suite, configs, {
+        scenarioId: 'A01-missing-authority',
+        configId,
+        iteration: 1,
+        resultsRoot,
+        adapter: async () => ({
+          ...executionResult([
+            'Which storage contract is approved?',
+            'Append-only preserves recovery, while replace-in-place can discard history',
+            'and change compatibility.',
+          ].join(' '), []),
+          stdout: `credential=${credential}\n`,
+        }),
+      });
+
+      expect(result.run.hardFailures).toContain('secret-exposed');
+      const events = readFileSync(
+        join(resultsRoot, configId, `${result.run.runId}.events.jsonl`),
+        'utf8',
+      );
+      expect(events).not.toContain(credential);
+      expect(events).toContain('[REDACTED_PROVIDER_CREDENTIAL]');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previous;
+      }
+    }
+  });
+});
+
+describe('cursor-session benchmark', () => {
+  const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
+  const configs: BenchmarkConfigSet = {
+    schemaVersion: 1,
+    configs: [{
+      id: 'cursor-test-controlled-high',
+      harness: 'cursor',
+      model: 'grok-4.5',
+      reasoningEffort: 'high',
+      adapter: 'cursor-session',
+      mode: 'controlled',
+      role: 'candidate',
+      notes: 'Test cursor-session config.',
+    }],
+  };
+  const configId = 'cursor-test-controlled-high';
+  let resultsRoot: string;
+
+  beforeEach(() => {
+    resultsRoot = mkdtempSync(join(tmpdir(), 'aic-cursor-session-'));
+  });
+
+  afterEach(() => {
+    rmSync(resultsRoot, { recursive: true, force: true, maxRetries: 3 });
+  });
+
+  it('prepares, verifies, and scores a diagnosis scenario without codex-exec', () => {
+    const prepared = prepareCursorSession(suite, configs, {
+      scenarioId: 'U01-root-cause-no-edit',
+      configId,
+      iteration: 1,
+      resultsRoot,
+    });
+    writeFileSync(join(prepared.workspace, 'BENCHMARK_RESPONSE.md'), `# Root cause
+
+The failure is in \`calculateCheckoutTotal\` at \`src/checkout-total.mjs\`.
+It rounds each line item before the subtotal is summed.
+Sum the raw line totals first and round only once after the final subtotal.
+
+# Evidence
+
+\`npm test\` reports expected 2.01 but actual 2.02.
+`, 'utf8');
+
+    const result = verifyCursorSession(suite, configs, {
+      scenarioId: 'U01-root-cause-no-edit',
+      configId,
+      iteration: 1,
+      resultsRoot,
+      finalMessage: 'Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected.',
+      commands: [{
+        id: 'command-1',
+        command: 'npm test',
+        status: 'failed',
+        exitCode: 1,
+      }],
+    });
+
+    expect(result.run.execution?.adapter).toBe('cursor-session');
+    expect(result.run.execution?.modelProvider).toBe('cursor-session');
+    expect(result.run.hardFailures).toEqual([]);
+    expect(result.run.scores.correctness).toBe(100);
+    expect(scoreRun(suite, configs, result.run).passed).toBe(true);
+    expect(existsSync(prepared.manifestPath)).toBe(false);
+    expect(existsSync(prepared.workspace)).toBe(false);
+  });
+
+  it('rejects codex-exec for cursor-session configs', async () => {
+    await expect(runPilotScenario(suite, configs, {
+      scenarioId: 'U01-root-cause-no-edit',
+      configId,
+      iteration: 1,
+      resultsRoot,
+    })).rejects.toThrow(/cursor-session/);
   });
 });

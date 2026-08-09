@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "provider": {
+    "id": "nine_router_local",
+    "name": "9Router Local",
+    "baseUrl": "http://127.0.0.1:9011/v1",
+    "envKey": "OPENAI_API_KEY",
+    "wireApi": "responses"
+  },
+  "models": [
+    {
+      "alias": "gpt-5.6-sol ultra",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "ultra",
+      "configId": "gpt-5.6-sol-codex-controlled-ultra",
+      "harness": "codex-cli",
+      "adapter": "codex-exec",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.codex-sol-ultra.json",
+      "updatedAt": "2026-08-08T00:00:00.000Z",
+      "notes": "Checked-in Codex controlled config through 9Router."
+    },
+    {
+      "alias": "grok 4.5 high",
+      "model": "grok-4.5",
+      "reasoningEffort": "high",
+      "configId": "grok-4.5-codex-controlled-high",
+      "harness": "codex-cli",
+      "adapter": "codex-exec",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.grok-4-5-high.json",
+      "updatedAt": "2026-08-09T02:27:01.710Z",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark runs."
+    },
+    {
+      "alias": "cursor grok4.5high",
+      "harness": "cursor",
+      "modelEffort": "grok4.5high",
+      "model": "grok-4.5",
+      "reasoningEffort": "high",
+      "configId": "cursor-grok-4.5-controlled-high",
+      "adapter": "cursor-session",
+      "executableHarness": "cursor",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.cursor-grok-4-5-high.json",
+      "updatedAt": "2026-08-09T03:29:03.268Z",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark cursor-session runs.",
+      "executionMode": "cursor-session"
+    },
+    {
+      "alias": "codex gpt-5.6-sol-ultra",
+      "harness": "codex",
+      "modelEffort": "gpt-5.6-sol-ultra",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "ultra",
+      "configId": "codex-gpt-5.6-sol-controlled-ultra",
+      "adapter": "codex-exec",
+      "executableHarness": "codex-cli",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.codex-gpt-5-6-sol-ultra.json",
+      "updatedAt": "2026-08-09T03:25:51.840Z",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark codex runs.",
+      "executionMode": "codex-exec"
+    }
+  ]
+}

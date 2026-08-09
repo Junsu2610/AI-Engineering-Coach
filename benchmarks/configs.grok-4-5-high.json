@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "grok-4.5-codex-controlled-high",
+      "harness": "codex-cli",
+      "model": "grok-4.5",
+      "reasoningEffort": "high",
+      "adapter": "codex-exec",
+      "codexProvider": {
+        "id": "nine_router_local",
+        "name": "9Router Local",
+        "baseUrl": "http://127.0.0.1:9011/v1",
+        "envKey": "OPENAI_API_KEY",
+        "wireApi": "responses"
+      },
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Auto-generated controlled Codex config for grok 4.5 high via 9Router."
+    }
+  ]
+}

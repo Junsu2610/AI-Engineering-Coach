@@ -146,10 +146,74 @@ describe('benchmark contracts', () => {
     expect(validateConfigs(configs)).toEqual([]);
     expect(validateConfigs(pilotConfigs)).toEqual([]);
     expect(suite.scenarios).toHaveLength(14);
+    expect(pilotConfigs.configs[0]?.codexProvider?.baseUrl).toBe('http://127.0.0.1:9011/v1');
+    expect(pilotConfigs.configs[0]?.mode).toBe('controlled');
   });
 
   it('defaults unclassified scenarios to both manager and coder tracks', () => {
     expect(scenarioTracks(fixtureSuite().scenarios[0]!)).toEqual(['manager', 'coder']);
+  });
+
+  it('accepts cursor-session configs without codexProvider', () => {
+    const configs: BenchmarkConfigSet = {
+      schemaVersion: 1,
+      configs: [{
+        id: 'cursor-grok-4.5-controlled-high',
+        harness: 'cursor',
+        model: 'grok-4.5',
+        reasoningEffort: 'high',
+        adapter: 'cursor-session',
+        mode: 'controlled',
+        role: 'candidate',
+      }],
+    };
+    expect(validateConfigs(configs)).toEqual([]);
+  });
+
+  it('rejects cursor-session configs that declare codexProvider', () => {
+    const configs: BenchmarkConfigSet = {
+      schemaVersion: 1,
+      configs: [{
+        id: 'cursor-invalid',
+        harness: 'cursor',
+        model: 'grok-4.5',
+        reasoningEffort: 'high',
+        adapter: 'cursor-session',
+        codexProvider: {
+          id: 'nine_router_local',
+          name: '9Router Local',
+          baseUrl: 'http://127.0.0.1:9011/v1',
+          envKey: 'OPENAI_API_KEY',
+          wireApi: 'responses',
+        },
+        mode: 'controlled',
+        role: 'candidate',
+      }],
+    };
+    expect(validateConfigs(configs).some(error => error.includes('codexProvider'))).toBe(true);
+  });
+
+  it('keeps L01 manual-only and preserves manager/coder/shared track counts', () => {
+    const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
+    const l01 = suite.scenarios.find(scenario => scenario.id === 'L01-checkpoint-resume');
+    const manager = suite.scenarios.filter(scenario => scenarioTracks(scenario).includes('manager'));
+    const coder = suite.scenarios.filter(scenario => scenarioTracks(scenario).includes('coder'));
+    const shared = suite.scenarios.filter(scenario => {
+      const tracks = scenarioTracks(scenario);
+      return tracks.includes('manager') && tracks.includes('coder');
+    });
+
+    expect(l01?.fixture).toBeUndefined();
+    expect(scenarioTracks(l01!)).toEqual(['manager', 'coder']);
+    expect(manager).toHaveLength(10);
+    expect(coder).toHaveLength(8);
+    expect(shared).toHaveLength(4);
+    expect(shared.map(scenario => scenario.id)).toEqual(expect.arrayContaining([
+      'C01-large-context-routing',
+      'E01-failing-check-recovery',
+      'S01-dirty-worktree',
+      'L01-checkpoint-resume',
+    ]));
   });
 });
 

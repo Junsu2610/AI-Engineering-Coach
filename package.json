@@ -297,6 +297,7 @@
     "lint": "eslint src/ --cache",
     "bench": "vitest bench",
     "benchmark:agents": "tsx src/benchmark/cli.ts",
+    "benchmark:model": "node scripts/benchmark-model.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
