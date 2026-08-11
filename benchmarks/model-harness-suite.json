@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "Model and Harness Benchmark V1",
   "description": "A local, repeatable benchmark for separating model capability, harness uplift, and native end-to-end performance.",
-  "repetitions": 3,
+  "repetitions": 1,
   "minimumAutomaticWeight": 80,
   "minimumEfficiencyCoverage": 80,
   "weights": {

@@ -132,7 +132,7 @@ function buildConfig(parsed, executionMode, registry) {
   const slug = slugify(`${parsed.harness}-${parsed.model}-${parsed.effort}${parsed.mode === 'native' ? '-native' : ''}`);
   const configId = `${parsed.harness}-${parsed.model}-${parsed.mode}-${parsed.effort}`;
   const configsRel = `benchmarks/configs.${slug}.json`;
-  const resultsRel = `benchmarks/results/${slug}-full-3x`;
+  const resultsRel = `benchmarks/results/${slug}-full-1x`;
 
   if (executionMode === CODEX_ADAPTER || executionMode === CODEX_NATIVE_ADAPTER) {
     const native = executionMode === CODEX_NATIVE_ADAPTER;
@@ -231,7 +231,7 @@ function buildCodexCommand(configsRel, configId, resultsRel) {
     `--configs ${configsRel.replaceAll('\\', '/')}`,
     `--config ${configId}`,
     '--track all',
-    '--iterations 3',
+    '--iterations 1',
     `--results ${resultsRel.replaceAll('\\', '/')}`,
   ].join(' `\n  ');
 }
@@ -253,7 +253,7 @@ function buildAgentSessionLoop(executionMode, configsRel, configId, resultsRel) 
     ...PILOT_SCENARIOS.map(id => `  - ${id}`),
     '',
     'After all scenarios are verified, aggregate the diagnostic report:',
-    `  npm run benchmark:agents -- full ${configsFlag} ${configFlag} --track all --iterations 3 ${resultsFlag}`,
+    `  npm run benchmark:agents -- full ${configsFlag} ${configFlag} --track all --iterations 1 ${resultsFlag}`,
   ];
   return lines.join('\n');
 }

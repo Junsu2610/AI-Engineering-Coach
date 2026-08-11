@@ -89,9 +89,9 @@ Harness `cursor` runs **inside the current Cursor agent session**. Model and eff
 Agent loop per scenario:
 
 ```powershell
-npm run benchmark:agents -- prepare --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-3x
+npm run benchmark:agents -- prepare --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-1x
 # complete the printed prompt in the prepared workspace
-npm run benchmark:agents -- verify --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-3x --final-message "Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected."
+npm run benchmark:agents -- verify --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --scenario U01-root-cause-no-edit --iteration 1 --results benchmarks/results/cursor-grok-4-5-high-full-1x --final-message "Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected."
 ```
 
 Pilot scenarios: `U01-root-cause-no-edit`, `F01-surgical-boundary-fix`, `S01-dirty-worktree`.
@@ -99,7 +99,7 @@ Pilot scenarios: `U01-root-cause-no-edit`, `F01-surgical-boundary-fix`, `S01-dir
 After all scenarios are verified, aggregate:
 
 ```powershell
-npm run benchmark:agents -- full --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --track all --iterations 3 --results benchmarks/results/cursor-grok-4-5-high-full-3x
+npm run benchmark:agents -- full --configs benchmarks/configs.cursor-grok-4-5-high.json --config cursor-grok-4.5-controlled-high --track all --iterations 1 --results benchmarks/results/cursor-grok-4-5-high-full-1x
 ```
 
 `full` for cursor-session configs only reuses completed schemaVersion 2 runs and builds a diagnostic report; it does not invoke Codex. Because command evidence is supplied by the active operator session, cursor-session results are operator-assisted and are not eligible for a controlled headline.
@@ -125,7 +125,7 @@ The repository exposes this workflow through [`skills/benchmark.md`](../skills/b
 Harness `codex` (or `codex-cli`) keeps the controlled `codex-exec` adapter through 9Router at `http://127.0.0.1:9011/v1`.
 
 ```powershell
-npm run benchmark:agents -- full --configs benchmarks/configs.codex-gpt-5-6-sol-ultra.json --config codex-gpt-5.6-sol-controlled-ultra --track all --iterations 3 --results benchmarks/results/codex-gpt-5-6-sol-ultra-full-3x
+npm run benchmark:agents -- full --configs benchmarks/configs.codex-gpt-5-6-sol-ultra.json --config codex-gpt-5.6-sol-controlled-ultra --track all --iterations 1 --results benchmarks/results/codex-gpt-5-6-sol-ultra-full-1x
 ```
 
 ### Native Codex harness (`executionMode: codex-native-exec`)
@@ -138,7 +138,7 @@ node scripts/benchmark-model.mjs codex gpt5.6solhigh native
 
 The generated config uses `mode: native`, `role: native`, and `adapter: codex-native-exec`. Each scenario starts a new Codex CLI process using the signed-in user's normal `CODEX_HOME`, configuration, memories, skills, plugins, and other native harness features. It does not pass `--ephemeral`, `--ignore-user-config`, feature-disable flags, a custom provider, 9Router, or `OPENAI_API_KEY`. The benchmark still pins the disposable workspace, requested model and reasoning effort, non-interactive approvals, workspace-write sandbox, and disabled shell network. Hidden verifiers and secret redaction remain active.
 
-Run the exact `full` command printed by the resolver. A complete 3x run is eligible for a native score when all executable scenarios and schema-version-2 evidence pass the normal headline gates. `L01-checkpoint-resume` remains manual-only.
+Run the exact `full` command printed by the resolver. A complete 1x run is eligible for a native score when all executable scenarios and schema-version-2 evidence pass the normal headline gates. `L01-checkpoint-resume` remains manual-only.
 
 Command definition: [`.cursor/commands/benchmark.md`](../.cursor/commands/benchmark.md).
 
@@ -215,8 +215,8 @@ Run the full executable manager/coder scenario suite:
 npm run benchmark:agents -- full `
   --config gpt-5.6-sol-codex-controlled-ultra `
   --track all `
-  --iterations 3 `
-  --results benchmarks/results/gpt-5.6-sol-full-3x
+  --iterations 1 `
+  --results benchmarks/results/gpt-5.6-sol-full-1x
 ```
 
 Use `--track manager` or `--track coder` to run one scenario track. The report includes overall score plus separate **Manager** and **Coder scenario-track** rows with scenario coverage, success rate, category scores, hard failures, and latency. Shared scenarios are counted in both tracks. These are task-track scores, not inferred internal subagent roles; the controlled Codex JSONL does not expose manager/coder attribution.
@@ -228,9 +228,9 @@ For a multi-configuration comparison, use one dedicated result root and the same
 ```powershell
 npm run benchmark:agents -- report `
   --configs benchmarks/configs.matrix.json `
-  --runs benchmarks/results/comparison-3x `
-  --out benchmarks/results/comparison-3x/report.md `
-  --json-out benchmarks/results/comparison-3x/report.json
+  --runs benchmarks/results/comparison-1x `
+  --out benchmarks/results/comparison-1x/report.md `
+  --json-out benchmarks/results/comparison-1x/report.json
 ```
 
 Benchmark outputs under `benchmarks/results/` are ignored by Git because they may contain local cost, timing, workspace, or model details.

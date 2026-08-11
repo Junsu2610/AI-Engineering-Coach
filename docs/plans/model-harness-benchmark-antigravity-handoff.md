@@ -103,8 +103,8 @@ Deliver a reusable, evidence-based benchmark suite that can compare end-to-end c
 npm run benchmark:agents -- full `
   --config gpt-5.6-sol-codex-controlled-ultra `
   --track all `
-  --iterations 3 `
-  --results benchmarks/results/gpt-5.6-sol-full-3x
+  --iterations 1 `
+  --results benchmarks/results/gpt-5.6-sol-full-1x
 ```
 
 ## 9Router Preflight

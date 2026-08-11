@@ -52,6 +52,10 @@ describe('benchmark model script', () => {
       expect(result.stdout).toContain('"mode": "native"');
       expect(result.stdout).toContain('"executionMode": "codex-native-exec"');
       expect(result.stdout).toContain('9Router and OPENAI_API_KEY are not used');
+      expect(result.stdout).toContain('--iterations 1');
+      expect(result.stdout).toContain('codex-gpt-5-6-sol-high-native-full-1x');
+      expect(result.stdout).not.toContain('--iterations 3');
+      expect(result.stdout).not.toContain('codex-gpt-5-6-sol-high-native-full-3x');
 
       const configsPath = join(
         fixture.benchmarksDirectory,

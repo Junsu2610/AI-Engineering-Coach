@@ -44,7 +44,7 @@ Resolve `$ARGUMENTS`, execute only the adapter that matches the active host, and
 6. After all required runs are verified, aggregate without invoking another harness:
 
    ```powershell
-   npm run benchmark:agents -- full --configs <configsPath> --config <configId> --track all --iterations 3 --results <resultsRoot>
+   npm run benchmark:agents -- full --configs <configsPath> --config <configId> --track all --iterations 1 --results <resultsRoot>
    ```
 
 7. Report overall score, Manager/Coder rows, hard failures, report paths, and automated coverage (`11/12` Manager, `8/9` Coder). State that active-session records are operator-assisted diagnostics and are not controlled-headline eligible.

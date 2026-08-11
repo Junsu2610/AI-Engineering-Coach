@@ -40,7 +40,7 @@ If `executionMode` is `claude-session`, stop after configuration. A Claude-sessi
    ```
 3. After all required scenarios are verified, aggregate the report (reuses completed runs; does not call Codex):
    ```powershell
-   npm run benchmark:agents -- full --configs <configsPath> --config <configId> --track all --iterations 3 --results <resultsRoot>
+   npm run benchmark:agents -- full --configs <configsPath> --config <configId> --track all --iterations 1 --results <resultsRoot>
    ```
 4. If interrupted mid-scenario: if a `.session.json` manifest exists, finish the workspace task and run `verify`; otherwise re-run `prepare` for that scenario/iteration.
 5. Report overall score, Manager/Coder track rows, hard failures, and report paths.

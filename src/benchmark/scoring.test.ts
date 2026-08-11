@@ -187,6 +187,7 @@ describe('benchmark contracts', () => {
     expect(validateExecutableFixtures(suite)).toEqual([]);
     expect(validateConfigs(configs)).toEqual([]);
     expect(validateConfigs(pilotConfigs)).toEqual([]);
+    expect(suite.repetitions).toBe(1);
     expect(suite.scenarios).toHaveLength(16);
     expect(pilotConfigs.configs[0]?.codexProvider?.baseUrl).toBe('http://127.0.0.1:9011/v1');
     expect(pilotConfigs.configs[0]?.mode).toBe('controlled');
