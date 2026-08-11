@@ -1,0 +1,132 @@
+2026-08-11T11:39:45.205012Z  WARN codex_skills::interface: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-08-11T11:39:45.205076Z  WARN codex_skills::interface: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-08-11T11:39:45.205723Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/plugins/cache/openai-primary-runtime/template-creator/26.805.11740/.codex-plugin/plugin.json
+2026-08-11T11:39:45.207458Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/plugins/cache/openai-primary-runtime/template-creator/26.805.11740/.codex-plugin/plugin.json
+2026-08-11T11:39:45.403167Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-08-11T11:39:45.517544Z ERROR codex_core::session::session: failed to load skill D:\01_PROJECT_CODE\00_Manager\shared-skills\team-agent\SKILL.md: missing YAML frontmatter delimited by ---
+2026-08-11T11:39:45.517571Z ERROR codex_core::session::session: failed to load skill D:\01_PROJECT_CODE\00_Manager\shared-skills\team-auto\SKILL.md: missing YAML frontmatter delimited by ---
+2026-08-11T11:39:45.517574Z ERROR codex_core::session::session: failed to load skill D:\01_PROJECT_CODE\00_Manager\shared-skills\team-task\SKILL.md: missing YAML frontmatter delimited by ---
+2026-08-11T11:39:45.614000Z  WARN codex_skills::interface: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-08-11T11:39:45.614038Z  WARN codex_skills::interface: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-08-11T11:39:45.614941Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/plugins/cache/openai-primary-runtime/template-creator/26.805.11740/.codex-plugin/plugin.json
+2026-08-11T11:39:45.617900Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/plugins/cache/openai-primary-runtime/template-creator/26.805.11740/.codex-plugin/plugin.json
+2026-08-11T11:39:46.143215Z  WARN codex_core_plugins::manifest: ignoring interface.composerIcon: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.143241Z  WARN codex_core_plugins::manifest: ignoring skills: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.144315Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/1139030773-cmd/agent-workflow-system/.codex-plugin/plugin.json
+2026-08-11T11:39:46.147160Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/alirezarezvani/claude-skills/.codex-plugin/plugin.json
+2026-08-11T11:39:46.147310Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/nyldn/claude-octopus/.codex-plugin/plugin.json
+2026-08-11T11:39:46.148063Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/kevin592/codex-full-stack-workflow/.codex-plugin/plugin.json
+2026-08-11T11:39:46.148243Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/Phelan164/codex-howto/.codex-plugin/plugin.json
+2026-08-11T11:39:46.149651Z  WARN codex_core_plugins::manifest: ignoring mcpServers: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.149879Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/Jason-chen-coder/dev-skills/.codex-plugin/plugin.json
+2026-08-11T11:39:46.150265Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/MedAdemBHA/docflow/.codex-plugin/plugin.json
+2026-08-11T11:39:46.150396Z  WARN codex_core_plugins::manifest: ignoring skills: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.150401Z  WARN codex_core_plugins::manifest: ignoring mcpServers: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.151795Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/jturntdev/krypton/.codex-plugin/plugin.json
+2026-08-11T11:39:46.152020Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/LVTD-LLC/skills/.codex-plugin/plugin.json
+2026-08-11T11:39:46.152231Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/Alex0nder/MailAgent/.codex-plugin/plugin.json
+2026-08-11T11:39:46.152337Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/sarveshsea/memi/.codex-plugin/plugin.json
+2026-08-11T11:39:46.153343Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/u-ichi/reviewable-html-workbench/.codex-plugin/plugin.json
+2026-08-11T11:39:46.153816Z  WARN codex_core_plugins::manifest: ignoring skills: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.154404Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/Habib0x0/spec-driven-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.155279Z  WARN codex_core_plugins::manifest: ignoring skills: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.156455Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/TerminallyLazy/tree-ring-memory-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.158865Z  WARN codex_core_plugins::manifest: ignoring interface.composerIcon: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.158878Z  WARN codex_core_plugins::manifest: ignoring interface.logo: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.159515Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/comprono/antigravity-2-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.159766Z  WARN codex_core_plugins::manifest: ignoring interface.composerIcon: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.159773Z  WARN codex_core_plugins::manifest: ignoring interface.logo: path must start with `./` relative to plugin root
+2026-08-11T11:39:46.160578Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/carsxe/carsxe-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.161165Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/greg-asher/codex-obsidian/.codex-plugin/plugin.json
+2026-08-11T11:39:46.161950Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/summer521521/CONTAM_plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.162417Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/entropy-data/dataproduct-builder-dbt/.codex-plugin/plugin.json
+2026-08-11T11:39:46.162635Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/indranilbanerjee/digital-marketing-pro/.codex-plugin/plugin.json
+2026-08-11T11:39:46.162918Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt[0]: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/droplinked/droplinked-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.162926Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt[2]: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/droplinked/droplinked-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.163656Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/ninihen1/power-automate-mcp-skills/.codex-plugin/plugin.json
+2026-08-11T11:39:46.165450Z  WARN codex_core_plugins::manifest: ignoring skills: path must not be `./`
+2026-08-11T11:39:46.165555Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/johnvouros/nullcost-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.166246Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt[0]: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/useorgx/orgx-codex-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.166375Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/panewslab/skills/.codex-plugin/plugin.json
+2026-08-11T11:39:46.167068Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/tim-osterhus/codex-remotion-plugin/.codex-plugin/plugin.json
+2026-08-11T11:39:46.167443Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/ScrapeGraphAI/just-scrape/.codex-plugin/plugin.json
+2026-08-11T11:39:46.167947Z  WARN codex_core_plugins::manifest: ignoring skills: path must not be `./`
+2026-08-11T11:39:46.168084Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/lacs-project/sysknife/.codex-plugin/plugin.json
+2026-08-11T11:39:46.168562Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt: maximum of 3 prompts is supported path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/hanhuark/mechanical-engineering-research-skill/.codex-plugin/plugin.json
+2026-08-11T11:39:46.169136Z  WARN codex_core_plugins::manifest: ignoring interface.defaultPrompt[2]: prompt must be at most 128 characters path=file:///C:/Users/ptd26/.codex/.tmp/marketplaces/awesome-codex-plugins/plugins/klajdikkolaj/upwork-autopilot/.codex-plugin/plugin.json
+2026-08-11T11:40:19.391972Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.3 seconds
+Output:
+
+2026-08-11T11:40:34.640635Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.2 seconds
+Output:
+The string is missing the terminator: ".
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
+ 
+
+2026-08-11T11:40:55.559061Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.6 seconds
+Output:
+
+> test
+> node --test --test-isolation=none test/filter-routing.test.mjs
+
+✖ routes the shared filter state to both consumers (0.9101ms)
+✖ does not use a similarly named legacy state branch (0.149ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10.926
+
+✖ failing tests:
+
+test at test\filter-routing.test.mjs:8:1
+✖ routes the shared filter state to both consumers (0.9101ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'open'
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-pnHY5K/workspace%20with%20spaces/test/filter-routing.test.mjs:10:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'open',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\filter-routing.test.mjs:14:1
+✖ does not use a similarly named legacy state branch (0.149ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'right'
+  
+      at TestContext.<anonymous> (file:///C:/Users/ptd26/AppData/Local/Temp/aic-agent-benchmark-pnHY5K/workspace%20with%20spaces/test/filter-routing.test.mjs:16:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'right',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+2026-08-11T11:41:00.909541Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.2 seconds
+Output:
+

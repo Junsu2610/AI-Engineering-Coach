@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-08-11T12:24:53.751Z",
+  "runCount": 45,
+  "draftCount": 0,
+  "configs": [
+    {
+      "config": {
+        "id": "codex-gpt-5.6-sol-native-high",
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "high",
+        "adapter": "codex-native-exec",
+        "mode": "native",
+        "role": "native",
+        "notes": "Auto-generated native config for codex gpt5.6solhigh native. Executable runs use the signed-in Codex CLI user profile without 9Router."
+      },
+      "score": 69.79,
+      "headlineEligible": true,
+      "headlineExclusions": [],
+      "completedScenarioCount": 15,
+      "requiredScenarioCount": 15,
+      "successRate": 71.11,
+      "hardFailureCount": 1,
+      "p50DurationMs": 63656,
+      "p90DurationMs": 141383,
+      "scoreSpread": 96.25,
+      "measurementCoverage": 80,
+      "tracks": [
+        {
+          "track": "manager",
+          "completedScenarioCount": 11,
+          "suiteScenarioCount": 12,
+          "coverage": 91.67,
+          "score": 60.32,
+          "successRate": 60.61,
+          "hardFailureCount": 1,
+          "p50DurationMs": 67691,
+          "p90DurationMs": 147780,
+          "measurementCoverage": 80,
+          "categoryScores": {
+            "correctness": 84.85,
+            "safety": 100,
+            "quality": 85,
+            "autonomy": 95.45,
+            "efficiency": 63.53,
+            "evidence": 76.97
+          }
+        },
+        {
+          "track": "coder",
+          "completedScenarioCount": 8,
+          "suiteScenarioCount": 9,
+          "coverage": 88.89,
+          "score": 95.83,
+          "successRate": 100,
+          "hardFailureCount": 0,
+          "p50DurationMs": 63471.5,
+          "p90DurationMs": 93282,
+          "measurementCoverage": 80,
+          "categoryScores": {
+            "correctness": 100,
+            "safety": 100,
+            "quality": 100,
+            "autonomy": 100,
+            "efficiency": 64.45,
+            "evidence": 91.88
+          }
+        }
+      ],
+      "nativeScore": 69.79
+    }
+  ]
+}
