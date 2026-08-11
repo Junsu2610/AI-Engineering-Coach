@@ -235,6 +235,51 @@ describe('benchmark contracts', () => {
     expect(validateConfigs(configs).some(error => error.includes('codexProvider'))).toBe(true);
   });
 
+  it('accepts claude-session configs with Claude Extension provenance', () => {
+    const configs: BenchmarkConfigSet = {
+      schemaVersion: 1,
+      configs: [{
+        id: 'claudeext-gpt-5.6-sol-controlled-xhigh',
+        harness: 'claudeext',
+        model: 'gpt-5.6-sol',
+        reasoningEffort: 'xhigh',
+        adapter: 'claude-session',
+        mode: 'controlled',
+        role: 'candidate',
+      }],
+    };
+
+    expect(validateConfigs(configs)).toEqual([]);
+  });
+
+  it('rejects claude-session provider, harness, effort, and mode mismatches', () => {
+    const configs: BenchmarkConfigSet = {
+      schemaVersion: 1,
+      configs: [{
+        id: 'claude-session-invalid',
+        harness: 'claude',
+        model: 'gpt-5.6-sol',
+        adapter: 'claude-session',
+        codexProvider: {
+          id: 'nine_router_local',
+          name: '9Router Local',
+          baseUrl: 'http://127.0.0.1:9011/v1',
+          envKey: 'OPENAI_API_KEY',
+          wireApi: 'responses',
+        },
+        mode: 'native',
+        role: 'native',
+      }],
+    };
+
+    expect(validateConfigs(configs)).toEqual(expect.arrayContaining([
+      expect.stringContaining('must not declare codexProvider'),
+      expect.stringContaining('require reasoningEffort'),
+      expect.stringContaining('must use controlled mode'),
+      expect.stringContaining('must use the claudeext harness'),
+    ]));
+  });
+
   it('keeps candidate attribution controlled and baselines explicit', () => {
     const configs = fixtureConfigs();
     configs.configs[1] = {
@@ -383,6 +428,31 @@ describe('scoreRun', () => {
 
     expect(validateRun(fixtureSuite(), fixtureConfigs(), run)).toContain(
       `${run.runId} verification check evidence passed must match score >= 70`,
+    );
+  });
+
+  it('validates matching claude-session execution provenance', () => {
+    const configs = fixtureConfigs();
+    configs.configs[0] = {
+      ...configs.configs[0]!,
+      harness: 'claudeext',
+      adapter: 'claude-session',
+      reasoningEffort: 'xhigh',
+    };
+    const run = schema2FixtureRun();
+    run.execution = {
+      ...run.execution!,
+      adapter: 'claude-session',
+      modelProvider: 'claude-session',
+      reasoningEffort: 'xhigh',
+    };
+
+    expect(validateConfigs(configs)).toEqual([]);
+    expect(validateRun(fixtureSuite(), configs, run)).toEqual([]);
+
+    run.execution = { ...run.execution, adapter: 'cursor-session' };
+    expect(validateRun(fixtureSuite(), configs, run)).toContain(
+      `${run.runId} execution adapter does not match its config`,
     );
   });
 });

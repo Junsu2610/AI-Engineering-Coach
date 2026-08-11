@@ -1,6 +1,6 @@
 ---
 name: benchmark
-description: "Run the model+harness benchmark. Usage: /benchmark <harness> <modelEffort>"
+description: "Run the model+harness benchmark. Usage: /benchmark <harness> <modelEffort> [controlled|native]"
 ---
 
 # Benchmark
@@ -18,6 +18,8 @@ node scripts/benchmark-model.mjs $ARGUMENTS
 Example: `/benchmark cursor grok4.5high` → harness `cursor`, model `grok-4.5`, effort `high`.
 
 Read the JSON output. Branch on `executionMode`:
+
+If `executionMode` is `claude-session`, stop after configuration. A Claude-session fixture must be completed by the active Claude Code VS Code extension session, not by Cursor. Do not prepare, edit, verify, or aggregate that run from this host; tell the user to invoke `/benchmark` in Claude Code.
 
 ---
 
@@ -42,7 +44,7 @@ Read the JSON output. Branch on `executionMode`:
    ```
 4. If interrupted mid-scenario: if a `.session.json` manifest exists, finish the workspace task and run `verify`; otherwise re-run `prepare` for that scenario/iteration.
 5. Report overall score, Manager/Coder track rows, hard failures, and report paths.
-   Note: L01 is manual-only → automated coverage Manager 9/10, Coder 7/8.
+   Note: L01 is manual-only → automated coverage Manager 11/12, Coder 8/9.
 
 ---
 
@@ -54,7 +56,20 @@ Read the JSON output. Branch on `executionMode`:
 2. Run the exact `full` command printed by the script (fresh `--results` root).
 3. If interrupted, re-run the same command to resume.
 4. Report overall score, Manager/Coder track rows, hard failures, and report paths.
-   Note: L01 is manual-only → automated coverage Manager 9/10, Coder 7/8.
+   Note: L01 is manual-only → automated coverage Manager 11/12, Coder 8/9.
+
+---
+
+## 2c. When `executionMode` is `codex-native-exec` (harness = `codex`, mode = `native`)
+
+**Meaning:** automated native runs through a freshly started signed-in Codex CLI process per scenario.
+
+1. Confirm the Codex CLI has an active native login.
+2. Do not require or route through 9Router or `OPENAI_API_KEY`.
+3. Run the exact `full` command printed by the script (fresh `--results` root).
+4. If interrupted, re-run the same command to resume.
+5. Report native score, Manager/Coder track rows, hard failures, and report paths.
+   Note: L01 is manual-only → automated coverage Manager 11/12, Coder 8/9.
 
 ---
 

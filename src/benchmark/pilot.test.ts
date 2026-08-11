@@ -10,8 +10,12 @@ import { join, resolve } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { CodexExecOptions, CodexExecResult } from './codex-exec';
-import { prepareCursorSession, runPilotScenario, verifyCursorSession } from './pilot';
+import type {
+  CodexExecOptions,
+  CodexExecResult,
+  CodexNativeExecOptions,
+} from './codex-exec';
+import { prepareAgentSession, prepareCursorSession, runPilotScenario, verifyAgentSession, verifyCursorSession } from './pilot';
 import { scoreRun } from './scoring';
 import type { BenchmarkConfigSet, BenchmarkSuite, CommandExecutionEvidence } from './types';
 
@@ -83,7 +87,7 @@ Sum the raw line totals first and round only once after the final subtotal.
 `, 'utf8');
         return executionResult('Diagnosis written to BENCHMARK_RESPONSE.md.', [{
           id: 'command-1',
-          command: 'npm test',
+          command: '"powershell.exe" -Command \'npm test; Get-FileHash package.json | Out-String\'',
           status: 'failed',
           exitCode: 1,
         }]);
@@ -438,7 +442,7 @@ Lane: manager. Analysis-only: compare PROJECT_GOAL.md with README before proposi
     expect(scoreRun(suite, configs, result.run).finalScore).toBe(0);
   });
 
-  it('accepts a priority-ordered M02 Markdown table without weakening item boundaries', async () => {
+  it('accepts a priority-first M02 Markdown table without treating future conditions as completion', async () => {
     const result = await runPilotScenario(suite, configs, {
       scenarioId: 'M02-inbox-triage',
       configId,
@@ -447,12 +451,12 @@ Lane: manager. Analysis-only: compare PROJECT_GOAL.md with README before proposi
       adapter: async options => {
         writeFileSync(join(options.cwd, 'MANAGER_TRIAGE.md'), `# Manager triage
 
-Item | Priority | Lane | Blocked-by | Verification
+Priority | Item | Lane | Blocked-by | Verification
 --- | --- | --- | --- | ---
-| 001 | P0 | ops | none | registry/projects.json says criticality high and runtime nas; inspect PROJECT_STATUS.md and reproduce with docker compose |
-| 002 | P1 | coder | none | run npm run seed:all and compare 42 expected rows with 38 observed rows |
-| 004 | P2 | manager | blocked-by 002 | read REQUEST.md before decomposition |
-| 003 | P3 | manager | none | analysis-only: compare PROJECT_GOAL.md with README before proposing a docs-only update |
+| P0 | 001 - compose-router outage | ops | none | registry/projects.json says criticality high and runtime nas; inspect PROJECT_STATUS.md and reproduce with docker compose |
+| P1 | 002 - HR seed regression | coder | none | run npm run seed:all and compare 42 expected rows with 38 observed rows |
+| P2 | 004 - batch import | manager | blocked-by 002 until the seed pipeline is resolved | read REQUEST.md before decomposition |
+| P3 | 003 - roadmap drift | manager | none | analysis-only: compare PROJECT_GOAL.md with README before proposing a docs-only update |
 `, 'utf8');
         return executionResult('Triage is done; no fixes were applied.', []);
       },
@@ -462,6 +466,42 @@ Item | Priority | Lane | Blocked-by | Verification
       check => check.id === 'triage-priority-and-lanes',
     );
     expect(requiredCheck).toMatchObject({ score: 100, passed: true });
+    expect(result.run.hardFailures).not.toContain('false-completion-claim');
+  });
+
+  it('recognizes successful tests inside multiline and imperfectly quoted PowerShell commands', async () => {
+    const result = await runPilotScenario(suite, configs, {
+      scenarioId: 'V01-evidence-handoff',
+      configId,
+      iteration: 1,
+      resultsRoot,
+      adapter: async options => {
+        const sourcePath = join(options.cwd, 'src', 'serializer.mjs');
+        writeFileSync(
+          sourcePath,
+          readFileSync(sourcePath, 'utf8').replace(
+            'Boolean(value)',
+            'value !== undefined',
+          ),
+          'utf8',
+        );
+        return executionResult(`Changed files: src/serializer.mjs
+
+Passed: npm test - 2/2 tests passed.
+Skipped: production compatibility sweep was unavailable offline.
+Residual risk: production-only compatibility was not exercised.`, [{
+          id: 'command-1',
+          command: '"powershell.exe" -Command \'Write-Output "verify"\nnpm test\nif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"',
+          status: 'completed',
+          exitCode: 0,
+        }]);
+      },
+    });
+
+    const evidenceCheck = result.run.verification?.checks.find(
+      check => check.id === 'evidence-backed-handoff',
+    );
+    expect(evidenceCheck).toMatchObject({ score: 100, passed: true });
     expect(result.run.hardFailures).not.toContain('false-completion-claim');
   });
 
@@ -603,26 +643,122 @@ Item | Priority | Lane | Blocked-by | Verification
   });
 });
 
-describe('cursor-session benchmark', () => {
+const diagnosis = `# Root cause
+
+The failure is in \`calculateCheckoutTotal\` at \`src/checkout-total.mjs\`.
+It rounds every line-item amount inside the subtotal reduction, prematurely discarding fractional cents.
+Sum the raw line totals first and round only once after the final subtotal.
+
+# Evidence
+
+\`npm test\` reports expected 2.01 but actual 2.02.
+`;
+
+const diagnosisCommands: CommandExecutionEvidence[] = [{
+  id: 'command-1',
+  command: '"powershell.exe" -Command \'npm test\'',
+  status: 'failed',
+  exitCode: 1,
+}];
+
+describe('codex-native-exec benchmark', () => {
   const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
+  const configId = 'codex-gpt-5.6-sol-native-high';
   const configs: BenchmarkConfigSet = {
     schemaVersion: 1,
     configs: [{
-      id: 'cursor-test-controlled-high',
-      harness: 'cursor',
-      model: 'grok-4.5',
+      id: configId,
+      harness: 'codex',
+      model: 'gpt-5.6-sol',
       reasoningEffort: 'high',
-      adapter: 'cursor-session',
-      mode: 'controlled',
-      role: 'candidate',
-      notes: 'Test cursor-session config.',
+      adapter: 'codex-native-exec',
+      mode: 'native',
+      role: 'native',
     }],
   };
-  const configId = 'cursor-test-controlled-high';
   let resultsRoot: string;
 
   beforeEach(() => {
-    resultsRoot = mkdtempSync(join(tmpdir(), 'aic-cursor-session-'));
+    resultsRoot = mkdtempSync(join(tmpdir(), 'aic-codex-native-'));
+  });
+
+  afterEach(() => {
+    rmSync(resultsRoot, { recursive: true, force: true, maxRetries: 3 });
+  });
+
+  it('runs and verifies a native Codex scenario without a custom provider', async () => {
+    const result = await runPilotScenario(suite, configs, {
+      scenarioId: 'U01-root-cause-no-edit',
+      configId,
+      iteration: 1,
+      resultsRoot,
+      nativeAdapter: async (options: CodexNativeExecOptions) => {
+        expect(options).not.toHaveProperty('provider');
+        writeFileSync(join(options.cwd, 'BENCHMARK_RESPONSE.md'), diagnosis, 'utf8');
+        return executionResult(
+          'Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected.',
+          diagnosisCommands,
+        );
+      },
+    });
+
+    expect(result.run.execution).toMatchObject({
+      adapter: 'codex-native-exec',
+      modelProvider: 'codex-native-login',
+      mode: 'native',
+    });
+    expect(result.run.hardFailures).toEqual([]);
+    expect(result.run.scores.correctness).toBe(100);
+    expect(result.run.notes).toContain(
+      'Codex ran with the native user profile and its configured memories, skills, plugins, and harness features available.',
+    );
+    expect(scoreRun(suite, configs, result.run).passed).toBe(true);
+  });
+});
+
+describe.each([
+  {
+    name: 'cursor-session',
+    tempPrefix: 'aic-cursor-session-',
+    configId: 'cursor-test-controlled-high',
+    configs: {
+      schemaVersion: 1,
+      configs: [{
+        id: 'cursor-test-controlled-high',
+        harness: 'cursor',
+        model: 'grok-4.5',
+        reasoningEffort: 'high',
+        adapter: 'cursor-session',
+        mode: 'controlled',
+        role: 'candidate',
+        notes: 'Test cursor-session config.',
+      }],
+    } satisfies BenchmarkConfigSet,
+  },
+  {
+    name: 'claude-session',
+    tempPrefix: 'aic-claude-session-',
+    configId: 'claudeext-gpt-5.6-sol-controlled-xhigh',
+    configs: {
+      schemaVersion: 1,
+      configs: [{
+        id: 'claudeext-gpt-5.6-sol-controlled-xhigh',
+        harness: 'claudeext',
+        model: 'gpt-5.6-sol',
+        reasoningEffort: 'xhigh',
+        adapter: 'claude-session',
+        mode: 'controlled',
+        role: 'candidate',
+        notes: 'Test claude-session config.',
+      }],
+    } satisfies BenchmarkConfigSet,
+  },
+])('$name benchmark', ({ name, tempPrefix, configs, configId }) => {
+  const suite = readJson<BenchmarkSuite>('benchmarks/model-harness-suite.json');
+  let resultsRoot: string;
+
+  beforeEach(() => {
+    resultsRoot = mkdtempSync(join(tmpdir(), tempPrefix));
   });
 
   afterEach(() => {
@@ -630,52 +766,43 @@ describe('cursor-session benchmark', () => {
   });
 
   it('prepares, verifies, and scores a diagnosis scenario without codex-exec', () => {
-    const prepared = prepareCursorSession(suite, configs, {
+    const prepare = name === 'cursor-session' ? prepareCursorSession : prepareAgentSession;
+    const verify = name === 'cursor-session' ? verifyCursorSession : verifyAgentSession;
+    const prepared = prepare(suite, configs, {
       scenarioId: 'U01-root-cause-no-edit',
       configId,
       iteration: 1,
       resultsRoot,
     });
-    writeFileSync(join(prepared.workspace, 'BENCHMARK_RESPONSE.md'), `# Root cause
+    writeFileSync(join(prepared.workspace, 'BENCHMARK_RESPONSE.md'), diagnosis, 'utf8');
 
-The failure is in \`calculateCheckoutTotal\` at \`src/checkout-total.mjs\`.
-It rounds each line item before the subtotal is summed.
-Sum the raw line totals first and round only once after the final subtotal.
-
-# Evidence
-
-\`npm test\` reports expected 2.01 but actual 2.02.
-`, 'utf8');
-
-    const result = verifyCursorSession(suite, configs, {
+    const result = verify(suite, configs, {
       scenarioId: 'U01-root-cause-no-edit',
       configId,
       iteration: 1,
       resultsRoot,
       finalMessage: 'Diagnosis written to BENCHMARK_RESPONSE.md. npm test still fails as expected.',
-      commands: [{
-        id: 'command-1',
-        command: 'npm test',
-        status: 'failed',
-        exitCode: 1,
-      }],
+      commands: diagnosisCommands,
     });
 
-    expect(result.run.execution?.adapter).toBe('cursor-session');
-    expect(result.run.execution?.modelProvider).toBe('cursor-session');
+    expect(result.run.execution?.adapter).toBe(name);
+    expect(result.run.execution?.modelProvider).toBe(name);
     expect(result.run.hardFailures).toEqual([]);
     expect(result.run.scores.correctness).toBe(100);
+    expect(result.run.notes).toContain(
+      'This operator-assisted record is diagnostic only and is not headline-eligible.',
+    );
     expect(scoreRun(suite, configs, result.run).passed).toBe(true);
     expect(existsSync(prepared.manifestPath)).toBe(false);
     expect(existsSync(prepared.workspace)).toBe(false);
   });
 
-  it('rejects codex-exec for cursor-session configs', async () => {
+  it('rejects codex-exec for agent-session configs', async () => {
     await expect(runPilotScenario(suite, configs, {
       scenarioId: 'U01-root-cause-no-edit',
       configId,
       iteration: 1,
       resultsRoot,
-    })).rejects.toThrow(/cursor-session/);
+    })).rejects.toThrow(new RegExp(name));
   });
 });

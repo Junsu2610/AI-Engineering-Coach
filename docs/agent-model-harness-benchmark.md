@@ -2,7 +2,7 @@
 
 This benchmark compares AI coding configurations without attributing every end-to-end result to the model alone. A configuration is the combination of a model, harness, prompt policy, tools, memory, and execution mode.
 
-The verifier and score calculation are local and offline. The optional adapter step calls the selected harness inference service, but it never reads or modifies user session logs or changes extension runtime behavior. The checked-in Codex adapter applies an ephemeral controlled profile itself, so operators do not need to pass a separate `--ephemeral` benchmark flag.
+The verifier and score calculation are local and offline. The optional adapter step calls the selected harness inference service, but it never reads or modifies user session logs or changes extension runtime behavior. The controlled Codex adapter applies an ephemeral profile itself, while the native Codex adapter intentionally preserves the signed-in user's normal Codex profile.
 
 ## What It Measures
 
@@ -58,20 +58,22 @@ Efficiency uses the available duration, token, cost, and tool-call measurements.
 
 Copy [`benchmarks/configs.example.json`](../benchmarks/configs.example.json) and replace the example model identifiers with the exact identifiers exposed by each harness. Keep one controlled neutral configuration per model and point candidate and native configurations to it through `baselineConfigId`.
 
-The example includes Codex, Claude, Cursor, and Antigravity configurations using the same model identifier. Remove combinations that are not actually available rather than simulating them. The checked-in `codex-exec` adapter supports controlled mode only; native configurations must use a native-capable adapter or a manual run record. This prevents a controlled run from being mislabeled as a native score.
+The example includes Codex, Claude, Cursor, and Antigravity configurations using the same model identifier. Remove combinations that are not actually available rather than simulating them. The checked-in `codex-exec` adapter supports controlled mode only. Codex native configurations use `codex-native-exec`, which starts a fresh signed-in Codex CLI process per run without the controlled adapter's ephemeral profile or 9Router overrides. Other native configurations still require a native-capable adapter or a manual run record.
 
 ## Slash command
 
-In Cursor, run:
+In Cursor or Claude Code, run:
 
 ```text
-/benchmark <harness> <modelEffort>
+/benchmark <harness> <modelEffort> [controlled|native]
 ```
 
 Examples:
 
 - `/benchmark cursor grok4.5high` — harness `cursor` (current Cursor agent session), model `grok-4.5`, effort `high`.
+- `/benchmark claudeext gpt5.6solxhigh` — harness `claudeext` (current Claude Code VS Code extension session), model `gpt-5.6-sol`, effort `xhigh`.
 - `/benchmark codex gpt-5.6-sol-ultra` — harness `codex` (Codex CLI via 9Router), model `gpt-5.6-sol`, effort `ultra`.
+- `/benchmark codex gpt5.6solhigh native` — native signed-in Codex CLI profile, model `gpt-5.6-sol`, effort `high`, without 9Router.
 
 The slash command runs `node scripts/benchmark-model.mjs` (also available as `npm run benchmark:model -- …`), which:
 
@@ -102,6 +104,22 @@ npm run benchmark:agents -- full --configs benchmarks/configs.cursor-grok-4-5-hi
 
 `full` for cursor-session configs only reuses completed schemaVersion 2 runs and builds a diagnostic report; it does not invoke Codex. Because command evidence is supplied by the active operator session, cursor-session results are operator-assisted and are not eligible for a controlled headline.
 
+### Claude Extension harness (`executionMode: claude-session`)
+
+Harness `claudeext` runs **inside the current Claude Code VS Code extension session**. The session prepares and edits the same disposable fixture workspaces used by Cursor, while the local hidden verifier records schema-version-2 evidence. It does not use Codex CLI, 9Router, `OPENAI_API_KEY`, or `127.0.0.1:9011`.
+
+Resolve the compact request:
+
+```powershell
+node scripts/benchmark-model.mjs claudeext gpt5.6solxhigh
+```
+
+This writes `benchmarks/configs.claudeext-gpt-5-6-sol-xhigh.json`, with model `gpt-5.6-sol`, effort `xhigh`, and adapter `claude-session`. For each scenario, use the printed `prepare` command, complete the prompt only in the printed workspace from that same Claude Code session, record commands actually run with `--commands-file`, and call `verify`. A pending `.session.json` is the resume point.
+
+After every selected scenario and iteration has a verified run, aggregate with the printed `full` command. As with Cursor, `full` only reuses compatible completed runs and does not invoke another harness. Claude-session records are operator-assisted diagnostics and are not eligible for controlled headline attribution.
+
+The repository exposes this workflow through [`skills/benchmark.md`](../skills/benchmark.md) and the Claude Code pointer [`.claude/skills/benchmark.md`](../.claude/skills/benchmark.md). Reload Claude Code or start a new session after adding the skill so `/benchmark` is rediscovered. Host matching is required: Cursor must not complete Claude-session workspaces, and Claude Code must not complete Cursor-session workspaces.
+
 ### Codex harness (`executionMode: codex-exec`)
 
 Harness `codex` (or `codex-cli`) keeps the controlled `codex-exec` adapter through 9Router at `http://127.0.0.1:9011/v1`.
@@ -109,6 +127,18 @@ Harness `codex` (or `codex-cli`) keeps the controlled `codex-exec` adapter throu
 ```powershell
 npm run benchmark:agents -- full --configs benchmarks/configs.codex-gpt-5-6-sol-ultra.json --config codex-gpt-5.6-sol-controlled-ultra --track all --iterations 3 --results benchmarks/results/codex-gpt-5-6-sol-ultra-full-3x
 ```
+
+### Native Codex harness (`executionMode: codex-native-exec`)
+
+Resolve a native Codex run with:
+
+```powershell
+node scripts/benchmark-model.mjs codex gpt5.6solhigh native
+```
+
+The generated config uses `mode: native`, `role: native`, and `adapter: codex-native-exec`. Each scenario starts a new Codex CLI process using the signed-in user's normal `CODEX_HOME`, configuration, memories, skills, plugins, and other native harness features. It does not pass `--ephemeral`, `--ignore-user-config`, feature-disable flags, a custom provider, 9Router, or `OPENAI_API_KEY`. The benchmark still pins the disposable workspace, requested model and reasoning effort, non-interactive approvals, workspace-write sandbox, and disabled shell network. Hidden verifiers and secret redaction remain active.
+
+Run the exact `full` command printed by the resolver. A complete 3x run is eligible for a native score when all executable scenarios and schema-version-2 evidence pass the normal headline gates. `L01-checkpoint-resume` remains manual-only.
 
 Command definition: [`.cursor/commands/benchmark.md`](../.cursor/commands/benchmark.md).
 

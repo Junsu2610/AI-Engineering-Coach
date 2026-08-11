@@ -12,11 +12,12 @@ file with YAML front matter that names it and describes when an AI agent should 
 | [author-rule-or-metric](author-rule-or-metric.md) | Author or edit a rule or metric (markdown + DSL) |
 | [worker-boundary-change](worker-boundary-change.md) | Touch parse / warm-up / cache workers or host perf |
 | [git-and-verification](git-and-verification.md) | Branch, commit, PR, and verification commands |
+| [benchmark](benchmark.md) | Run, verify, resume, or aggregate model+harness benchmarks |
 | [agent-prompt-workflows](agent-prompt-workflows.md) | Index into `docs/agent-prompts/*` workflows |
 
 ## GitHub Agentic Workflows (gh-aw)
 
-The repo also ships [`.github/skills/agentic-workflows/`](../.github/skills/agentic-workflows/) for **GitHub Agentic Workflows (gh-aw)** — workflow create/debug/upgrade. That skill is separate from the six repo skills above; do not confuse them with `skills/*.md`.
+The repo also ships [`.github/skills/agentic-workflows/`](../.github/skills/agentic-workflows/) for **GitHub Agentic Workflows (gh-aw)** — workflow create/debug/upgrade. That skill is separate from the seven repo skills above; do not confuse them with `skills/*.md`.
 
 ## Layout
 

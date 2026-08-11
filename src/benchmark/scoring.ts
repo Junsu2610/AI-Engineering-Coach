@@ -271,20 +271,46 @@ export function validateConfigs(value: BenchmarkConfigSet | unknown): string[] {
       errors.push(`${config.id} candidate configs must use controlled mode`);
     }
     if (config.adapter !== undefined
-      && !['manual', 'codex-exec', 'cursor-session'].includes(config.adapter)) {
+      && ![
+        'manual',
+        'codex-exec',
+        'codex-native-exec',
+        'cursor-session',
+        'claude-session',
+      ].includes(config.adapter)) {
       errors.push(`${config.id} has invalid adapter ${String(config.adapter)}`);
     }
-    if (config.adapter === 'cursor-session' && config.codexProvider !== undefined) {
-      errors.push(`${config.id} cursor-session configs must not declare codexProvider`);
+    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+      && config.codexProvider !== undefined) {
+      errors.push(`${config.id} ${config.adapter} configs must not declare codexProvider`);
     }
-    if (config.adapter === 'cursor-session' && config.reasoningEffort === undefined) {
-      errors.push(`${config.id} cursor-session configs require reasoningEffort`);
+    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+      && config.reasoningEffort === undefined) {
+      errors.push(`${config.id} ${config.adapter} configs require reasoningEffort`);
+    }
+    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+      && config.mode !== 'controlled') {
+      errors.push(`${config.id} ${config.adapter} configs must use controlled mode`);
     }
     if (config.adapter === 'codex-exec' && !['codex', 'codex-cli'].includes(config.harness)) {
       errors.push(`${config.id} codex-exec configs must use codex or codex-cli harness`);
     }
+    if (config.adapter === 'codex-native-exec') {
+      if (!['codex', 'codex-cli'].includes(config.harness)) {
+        errors.push(`${config.id} codex-native-exec configs must use codex or codex-cli harness`);
+      }
+      if (config.reasoningEffort === undefined) {
+        errors.push(`${config.id} codex-native-exec configs require reasoningEffort`);
+      }
+      if (config.mode !== 'native' || config.role !== 'native') {
+        errors.push(`${config.id} codex-native-exec configs require native mode and role`);
+      }
+    }
     if (config.adapter === 'cursor-session' && config.harness !== 'cursor') {
       errors.push(`${config.id} cursor-session configs must use the cursor harness`);
+    }
+    if (config.adapter === 'claude-session' && config.harness !== 'claudeext') {
+      errors.push(`${config.id} claude-session configs must use the claudeext harness`);
     }
     if (config.reasoningEffort !== undefined
       && !['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(config.reasoningEffort)) {
@@ -486,7 +512,13 @@ function validateExecution(execution: BenchmarkExecution | undefined, run: Bench
     return [`${run.runId}.execution is required for schemaVersion 2`];
   }
   const errors: string[] = [];
-  if (!['manual', 'codex-exec', 'cursor-session'].includes(execution.adapter)) {
+  if (![
+    'manual',
+    'codex-exec',
+    'codex-native-exec',
+    'cursor-session',
+    'claude-session',
+  ].includes(execution.adapter)) {
     errors.push(`${run.runId}.execution.adapter is invalid`);
   }
   if (!['controlled', 'native'].includes(execution.mode)) {
@@ -767,7 +799,9 @@ export function scoreRun(
   }
   const efficiency = scoreEfficiency(run, scenario);
   const defaultCoverage = suite.minimumEfficiencyCoverage ?? 0;
-  const requiredCoverage = run.execution?.adapter === 'cursor-session'
+  const sessionAdapter = run.execution?.adapter === 'cursor-session'
+    || run.execution?.adapter === 'claude-session';
+  const requiredCoverage = sessionAdapter
     ? Math.min(defaultCoverage, EFFICIENCY_METRIC_WEIGHTS.durationMs)
     : defaultCoverage;
   const meetsEfficiencyCoverage = efficiency.coverage >= requiredCoverage;
@@ -913,14 +947,14 @@ function summarizeConfig(
   if (requiredScenarioIds.length < 2) {
     headlineExclusions.push('headline requires at least two executable scenarios');
   }
-  if (config.adapter !== 'codex-exec') {
+  if (!['codex-exec', 'codex-native-exec'].includes(config.adapter ?? '')) {
     headlineExclusions.push(`adapter ${config.adapter ?? 'manual'} is not headline-eligible`);
   }
   if (runs.some(run => run.run.schemaVersion !== 2)) {
     headlineExclusions.push('schemaVersion 1 records are diagnostic only');
   }
-  if (runs.some(run => run.run.execution?.adapter !== 'codex-exec')) {
-    headlineExclusions.push('operator-assisted or non-executable records are diagnostic only');
+  if (runs.some(run => run.run.execution?.adapter !== config.adapter)) {
+    headlineExclusions.push('execution adapter does not match the executable config');
   }
   const unexpectedScenarios = [...new Set(runs
     .map(run => run.scenario.id)

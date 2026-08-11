@@ -5,7 +5,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildCodexEnvironment, buildCodexExecArgs, parseCodexJsonl } from './codex-exec';
+import {
+  buildCodexEnvironment,
+  buildCodexExecArgs,
+  buildCodexNativeEnvironment,
+  buildCodexNativeExecArgs,
+  parseCodexJsonl,
+} from './codex-exec';
 
 describe('parseCodexJsonl', () => {
   it('deduplicates tool lifecycles and reads final cumulative usage', () => {
@@ -153,5 +159,39 @@ describe('parseCodexJsonl', () => {
       'windows.sandbox="unelevated"',
     ]));
     expect(args).not.toContain('--ignore-rules');
+  });
+
+  it('keeps the native Codex profile while starting an independent benchmark process', () => {
+    const env = buildCodexNativeEnvironment({
+      CODEX_HOME: 'C:\\native-codex-home',
+      CODEX_ACCESS_TOKEN: 'native-token',
+      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: 'Codex Desktop',
+      CODEX_PERMISSION_PROFILE: ':danger-full-access',
+      CODEX_THREAD_ID: 'desktop-thread',
+      PATH: 'test-path',
+    });
+    const args = buildCodexNativeExecArgs({
+      cwd: 'C:\\fixture',
+      prompt: 'Complete the task.',
+      model: 'gpt-5.6-sol',
+      reasoningEffort: 'high',
+      timeoutMs: 1_000,
+      lastMessagePath: 'C:\\result.md',
+    });
+
+    expect(env.CODEX_HOME).toBe('C:\\native-codex-home');
+    expect(env.CODEX_ACCESS_TOKEN).toBe('native-token');
+    expect(env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE).toBeUndefined();
+    expect(env.CODEX_PERMISSION_PROFILE).toBeUndefined();
+    expect(env.CODEX_THREAD_ID).toBeUndefined();
+    expect(args).toEqual(expect.arrayContaining([
+      'projects."C:\\\\fixture".trust_level="trusted"',
+      'model_reasoning_effort="high"',
+      'windows.sandbox="unelevated"',
+    ]));
+    expect(args).not.toContain('--ephemeral');
+    expect(args).not.toContain('--ignore-user-config');
+    expect(args).not.toContain('--disable');
+    expect(args.some(arg => arg.startsWith('model_provider='))).toBe(false);
   });
 });

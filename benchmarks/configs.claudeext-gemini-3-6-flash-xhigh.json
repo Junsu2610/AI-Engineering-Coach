@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "claudeext-gemini-3.6-flash-controlled-xhigh",
+      "harness": "claudeext",
+      "model": "gemini-3.6-flash",
+      "reasoningEffort": "xhigh",
+      "adapter": "claude-session",
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Auto-generated controlled config for claudeext gemini3.6flashxhigh. Runs execute in the current Claude Code agent session (harness=claudeext, model=gemini-3.6-flash, effort=xhigh). No 9Router or Codex CLI. Operator-assisted records are diagnostic only."
+    }
+  ]
+}

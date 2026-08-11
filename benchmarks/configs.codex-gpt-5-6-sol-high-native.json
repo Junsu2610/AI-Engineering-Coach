@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "codex-gpt-5.6-sol-native-high",
+      "harness": "codex",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "high",
+      "adapter": "codex-native-exec",
+      "mode": "native",
+      "role": "native",
+      "notes": "Auto-generated native config for codex gpt5.6solhigh native. Executable runs use the signed-in Codex CLI user profile without 9Router."
+    }
+  ]
+}

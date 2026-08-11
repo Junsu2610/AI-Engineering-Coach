@@ -68,7 +68,12 @@ export interface BenchmarkSuite {
 
 export type BenchmarkMode = 'controlled' | 'native';
 export type BenchmarkRole = 'baseline' | 'candidate' | 'native';
-export type BenchmarkAdapterId = 'manual' | 'codex-exec' | 'cursor-session';
+export type BenchmarkAdapterId =
+  | 'manual'
+  | 'codex-exec'
+  | 'codex-native-exec'
+  | 'cursor-session'
+  | 'claude-session';
 export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';
 
 export interface CodexProviderConfig {

@@ -15,10 +15,10 @@ import {
   PILOT_VERIFIER_VERSION,
   PILOT_SCENARIO_IDS,
   fixtureSha256ForScenario,
-  prepareCursorSession,
+  prepareAgentSession,
   runPilotScenario,
   validateExecutableFixtures,
-  verifyCursorSession,
+  verifyAgentSession,
 } from './pilot';
 import { renderBenchmarkReport } from './report';
 import {
@@ -370,31 +370,37 @@ function readCommands(args: string[]): CommandExecutionEvidence[] | undefined {
   });
 }
 
-function isCursorSessionConfig(configs: BenchmarkConfigSet, configId: string): boolean {
+function sessionAdapterForConfig(
+  configs: BenchmarkConfigSet,
+  configId: string,
+): 'cursor-session' | 'claude-session' | undefined {
   const config = configs.configs.find(candidate => candidate.id === configId);
-  return config?.adapter === 'cursor-session';
+  return config?.adapter === 'cursor-session' || config?.adapter === 'claude-session'
+    ? config.adapter
+    : undefined;
 }
 
-function pendingCursorSessionMessage(
+export function pendingAgentSessionMessage(
   resultsRoot: string,
   configId: string,
   scenarioId: string,
   iteration: number,
-): string | undefined {
+  adapter: 'cursor-session' | 'claude-session',
+): string {
   const runId = `${scenarioId}-${configId}-r${iteration}`;
   const manifestPath = join(resultsRoot, configId, `${runId}.session.json`);
   if (existsSync(manifestPath)) {
-    return `Pending cursor-session verify for ${scenarioId} iteration ${iteration}. `
+    return `Pending ${adapter} verify for ${scenarioId} iteration ${iteration}. `
       + 'Complete the prepared workspace, then run verify.';
   }
-  return `Missing completed run for ${scenarioId} iteration ${iteration}. `
+  return `Missing completed ${adapter} run for ${scenarioId} iteration ${iteration}. `
     + 'Run prepare, complete the task in the workspace, then verify.';
 }
 
 function prepareCommand(args: string[]): void {
   const { suite, configs } = loadContracts(args);
   assertContracts(suite, configs);
-  const result = prepareCursorSession(suite, configs, {
+  const result = prepareAgentSession(suite, configs, {
     scenarioId: requiredFlag(args, '--scenario'),
     configId: requiredFlag(args, '--config'),
     iteration: integerFlag(args, '--iteration', 1),
@@ -409,7 +415,7 @@ function prepareCommand(args: string[]): void {
 function verifyCommand(args: string[]): void {
   const { suite, configs } = loadContracts(args);
   assertContracts(suite, configs);
-  const result = verifyCursorSession(suite, configs, {
+  const result = verifyAgentSession(suite, configs, {
     scenarioId: requiredFlag(args, '--scenario'),
     configId: requiredFlag(args, '--config'),
     iteration: integerFlag(args, '--iteration', 1),
@@ -457,11 +463,11 @@ async function pilotCommand(args: string[]): Promise<void> {
     throw new Error(`--iterations must not exceed suite repetitions (${suite.repetitions})`);
   }
   const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
-  const cursorSession = isCursorSessionConfig(configs, configId);
+  const sessionAdapter = sessionAdapterForConfig(configs, configId);
   const runs: BenchmarkRun[] = [];
   for (let iteration = 1; iteration <= iterations; iteration += 1) {
     for (const scenarioId of PILOT_SCENARIO_IDS) {
-      if (cursorSession) {
+      if (sessionAdapter !== undefined) {
         const reusable = loadReusableFullRun(
           suite,
           configs,
@@ -475,7 +481,13 @@ async function pilotCommand(args: string[]): Promise<void> {
           console.log(`Reusing ${reusable.path}`);
           continue;
         }
-        throw new Error(pendingCursorSessionMessage(resultsRoot, configId, scenarioId, iteration));
+        throw new Error(pendingAgentSessionMessage(
+          resultsRoot,
+          configId,
+          scenarioId,
+          iteration,
+          sessionAdapter,
+        ));
       }
       console.log(`Running ${scenarioId} iteration ${iteration}...`);
       const result = await runPilotScenario(suite, configs, {
@@ -580,7 +592,7 @@ async function fullCommand(args: string[]): Promise<void> {
     throw new Error('No executable scenarios found for track ' + track);
   }
   const resultsRoot = resolve(readFlag(args, '--results') ?? 'benchmarks/results');
-  const cursorSession = isCursorSessionConfig(configs, configId);
+  const sessionAdapter = sessionAdapterForConfig(configs, configId);
   for (let iteration = 1; iteration <= iterations; iteration += 1) {
     for (const scenarioId of selectedScenarioIds) {
       const reusable = loadReusableFullRun(
@@ -595,8 +607,14 @@ async function fullCommand(args: string[]): Promise<void> {
         console.log('Reusing ' + reusable.path);
         continue;
       }
-      if (cursorSession) {
-        throw new Error(pendingCursorSessionMessage(resultsRoot, configId, scenarioId, iteration));
+      if (sessionAdapter !== undefined) {
+        throw new Error(pendingAgentSessionMessage(
+          resultsRoot,
+          configId,
+          scenarioId,
+          iteration,
+          sessionAdapter,
+        ));
       }
       console.log('Running ' + scenarioId + ' iteration ' + iteration + '...');
       const result = await runPilotScenario(suite, configs, {
@@ -708,7 +726,9 @@ Commands:
 
 Notes:
   - cursor-session configs use prepare/verify in the current Cursor agent; no 9Router.
+  - claude-session configs use prepare/verify in the current Claude Code agent; no 9Router.
   - codex-exec configs use Codex CLI through 9Router. L01-checkpoint-resume is manual-only.
+  - codex-native-exec configs use the signed-in Codex CLI profile without 9Router.
   - full reuses compatible schemaVersion 2 runs under --results and aggregates completed records.
 `);
 }

@@ -34,6 +34,7 @@ Subagents: parallel exploration or isolated review — not single-file edits or 
 | [`author-rule-or-metric`](skills/author-rule-or-metric.md) | Author or edit a built-in/personal/project rule or metric |
 | [`worker-boundary-change`](skills/worker-boundary-change.md) | Touch parse / warm-up / cache workers or extension-host perf |
 | [`git-and-verification`](skills/git-and-verification.md) | Branch, commit, PR, or verification commands in this repo |
+| [`benchmark`](skills/benchmark.md) | Run or resume model+harness benchmark scenarios and reports |
 | [`agent-prompt-workflows`](skills/agent-prompt-workflows.md) | Spec-first, checkpoint, review, or weekly coach prompts |
 
 Pointers: [`docs/AUTHORING_RULES.md`](docs/AUTHORING_RULES.md) · [`PROJECT_GOAL.md`](PROJECT_GOAL.md) · [`skills/README.md`](skills/README.md)

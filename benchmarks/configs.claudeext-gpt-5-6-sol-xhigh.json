@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "claudeext-gpt-5.6-sol-controlled-xhigh",
+      "harness": "claudeext",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "xhigh",
+      "adapter": "claude-session",
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Auto-generated controlled config for claudeext gpt5.6solxhigh. Runs execute in the current Claude Code agent session (harness=claudeext, model=gpt-5.6-sol, effort=xhigh). No 9Router or Codex CLI. Operator-assisted records are diagnostic only."
+    }
+  ]
+}

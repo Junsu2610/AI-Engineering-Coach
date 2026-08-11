@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Resolve `/benchmark <harness> <modelEffort>` into a saved model registry entry,
+ * Resolve `/benchmark <harness> <modelEffort> [controlled|native]` into a saved model registry entry,
  * a dedicated configs JSON file, and runnable instructions for the selected harness.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -13,10 +13,14 @@ const EFFORT_SUFFIXES = ['xhigh', 'ultra', 'medium', 'high', 'low', 'max'];
 const DEFAULT_EFFORT = 'high';
 const CODEX_HARNESSES = new Set(['codex', 'codex-cli']);
 const CURSOR_HARNESSES = new Set(['cursor']);
+const CLAUDE_HARNESSES = new Set(['claudeext']);
 const CODEX_EXECUTABLE_HARNESS = 'codex-cli';
 const CODEX_ADAPTER = 'codex-exec';
+const CODEX_NATIVE_ADAPTER = 'codex-native-exec';
 const CURSOR_ADAPTER = 'cursor-session';
+const CLAUDE_ADAPTER = 'claude-session';
 const CURSOR_EXECUTABLE_HARNESS = 'cursor';
+const CLAUDE_EXECUTABLE_HARNESS = 'claudeext';
 const PILOT_SCENARIOS = [
   'U01-root-cause-no-edit',
   'F01-surgical-boundary-fix',
@@ -24,8 +28,8 @@ const PILOT_SCENARIOS = [
 ];
 
 function usage() {
-  console.error('Usage: node scripts/benchmark-model.mjs <harness> <modelEffort>');
-  console.error('Example: node scripts/benchmark-model.mjs cursor grok4.5high');
+  console.error('Usage: node scripts/benchmark-model.mjs <harness> <modelEffort> [controlled|native]');
+  console.error('Example: node scripts/benchmark-model.mjs codex gpt5.6solhigh native');
   process.exitCode = 1;
 }
 
@@ -43,6 +47,7 @@ function normalizeModelId(value) {
   }
   return value
     .replace(/([a-z])(\d)/gi, '$1-$2')
+    .replace(/(\d)([a-z])/gi, '$1-$2')
     .replace(/[^a-z0-9._-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -80,13 +85,17 @@ function parseArgs(argv) {
   }
 
   const harness = slugify(tokens[0]);
-  const modelEffortToken = tokens.length === 2
-    ? tokens[1]
-    : tokens.slice(1).join('');
+  const requestedMode = tokens.length > 2 && ['controlled', 'native'].includes(tokens.at(-1).toLowerCase())
+    ? tokens.at(-1).toLowerCase()
+    : 'controlled';
+  const modelTokens = requestedMode === 'controlled' && tokens.at(-1).toLowerCase() !== 'controlled'
+    ? tokens.slice(1)
+    : tokens.slice(1, -1);
+  const modelEffortToken = modelTokens.join('');
   const { model, effort, modelEffort } = parseModelEffort(modelEffortToken);
-  const alias = `${tokens[0]} ${modelEffort}`;
+  const alias = `${tokens[0]} ${modelEffort}${requestedMode === 'native' ? ' native' : ''}`;
 
-  return { harness, model, effort, modelEffort, alias };
+  return { harness, model, effort, modelEffort, alias, mode: requestedMode };
 }
 
 function readRegistry() {
@@ -101,25 +110,47 @@ function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, undefined, 2)}\n`, 'utf8');
 }
 
-function resolveExecutionMode(harness) {
+function resolveExecutionMode(harness, mode) {
   if (CODEX_HARNESSES.has(harness)) {
-    return CODEX_ADAPTER;
+    return mode === 'native' ? CODEX_NATIVE_ADAPTER : CODEX_ADAPTER;
+  }
+  if (mode === 'native') {
+    throw new Error(`Native mode is not executable for harness "${harness}"`);
   }
   if (CURSOR_HARNESSES.has(harness)) {
     return CURSOR_ADAPTER;
   }
+  if (CLAUDE_HARNESSES.has(harness)) {
+    return CLAUDE_ADAPTER;
+  }
   throw new Error(
-    `Unknown harness "${harness}". Supported harnesses: codex, codex-cli, cursor.`,
+    `Unknown harness "${harness}". Supported harnesses: codex, codex-cli, cursor, claudeext.`,
   );
 }
 
 function buildConfig(parsed, executionMode, registry) {
-  const slug = slugify(`${parsed.harness}-${parsed.model}-${parsed.effort}`);
-  const configId = `${parsed.harness}-${parsed.model}-controlled-${parsed.effort}`;
+  const slug = slugify(`${parsed.harness}-${parsed.model}-${parsed.effort}${parsed.mode === 'native' ? '-native' : ''}`);
+  const configId = `${parsed.harness}-${parsed.model}-${parsed.mode}-${parsed.effort}`;
   const configsRel = `benchmarks/configs.${slug}.json`;
   const resultsRel = `benchmarks/results/${slug}-full-3x`;
 
-  if (executionMode === CODEX_ADAPTER) {
+  if (executionMode === CODEX_ADAPTER || executionMode === CODEX_NATIVE_ADAPTER) {
+    const native = executionMode === CODEX_NATIVE_ADAPTER;
+    const config = {
+      id: configId,
+      harness: parsed.harness,
+      model: parsed.model,
+      reasoningEffort: parsed.effort,
+      adapter: executionMode,
+      mode: parsed.mode,
+      role: native ? 'native' : 'candidate',
+      notes: native
+        ? `Auto-generated native config for ${parsed.alias}. Executable runs use the signed-in Codex CLI user profile without 9Router.`
+        : `Auto-generated controlled config for ${parsed.alias}. Executable runs use ${CODEX_ADAPTER} via 9Router.`,
+    };
+    if (!native) {
+      config.codexProvider = registry.provider;
+    }
     return {
       slug,
       configId,
@@ -127,17 +158,7 @@ function buildConfig(parsed, executionMode, registry) {
       resultsRel,
       configSet: {
         schemaVersion: 1,
-        configs: [{
-          id: configId,
-          harness: parsed.harness,
-          model: parsed.model,
-          reasoningEffort: parsed.effort,
-          adapter: CODEX_ADAPTER,
-          codexProvider: registry.provider,
-          mode: 'controlled',
-          role: 'candidate',
-          notes: `Auto-generated controlled config for ${parsed.alias}. Executable runs use ${CODEX_ADAPTER} via 9Router.`,
-        }],
+        configs: [config],
       },
       entry: {
         alias: parsed.alias,
@@ -146,17 +167,28 @@ function buildConfig(parsed, executionMode, registry) {
         model: parsed.model,
         reasoningEffort: parsed.effort,
         configId,
-        adapter: CODEX_ADAPTER,
-        executionMode: CODEX_ADAPTER,
+        adapter: executionMode,
+        executionMode,
         executableHarness: CODEX_EXECUTABLE_HARNESS,
-        mode: 'controlled',
-        role: 'candidate',
+        mode: parsed.mode,
+        role: native ? 'native' : 'candidate',
         configsPath: configsRel.replaceAll('\\', '/'),
         notes: 'Upserted by scripts/benchmark-model.mjs for /benchmark codex runs.',
       },
     };
   }
 
+  const session = executionMode === CURSOR_ADAPTER
+    ? {
+      adapter: CURSOR_ADAPTER,
+      executableHarness: CURSOR_EXECUTABLE_HARNESS,
+      agentName: 'Cursor',
+    }
+    : {
+      adapter: CLAUDE_ADAPTER,
+      executableHarness: CLAUDE_EXECUTABLE_HARNESS,
+      agentName: 'Claude Code',
+    };
   return {
     slug,
     configId,
@@ -169,10 +201,10 @@ function buildConfig(parsed, executionMode, registry) {
         harness: parsed.harness,
         model: parsed.model,
         reasoningEffort: parsed.effort,
-        adapter: CURSOR_ADAPTER,
+        adapter: session.adapter,
         mode: 'controlled',
         role: 'candidate',
-        notes: `Auto-generated controlled config for ${parsed.alias}. Runs execute in the current Cursor agent session (harness=${parsed.harness}, model=${parsed.model}, effort=${parsed.effort}). No 9Router or Codex CLI.`,
+        notes: `Auto-generated controlled config for ${parsed.alias}. Runs execute in the current ${session.agentName} agent session (harness=${parsed.harness}, model=${parsed.model}, effort=${parsed.effort}). No 9Router or Codex CLI. Operator-assisted records are diagnostic only.`,
       }],
     },
     entry: {
@@ -182,13 +214,13 @@ function buildConfig(parsed, executionMode, registry) {
       model: parsed.model,
       reasoningEffort: parsed.effort,
       configId,
-      adapter: CURSOR_ADAPTER,
-      executionMode: CURSOR_ADAPTER,
-      executableHarness: CURSOR_EXECUTABLE_HARNESS,
+      adapter: session.adapter,
+      executionMode: session.adapter,
+      executableHarness: session.executableHarness,
       mode: 'controlled',
       role: 'candidate',
       configsPath: configsRel.replaceAll('\\', '/'),
-      notes: 'Upserted by scripts/benchmark-model.mjs for /benchmark cursor-session runs.',
+      notes: `Upserted by scripts/benchmark-model.mjs for /benchmark ${session.adapter} runs.`,
     },
   };
 }
@@ -204,22 +236,23 @@ function buildCodexCommand(configsRel, configId, resultsRel) {
   ].join(' `\n  ');
 }
 
-function buildCursorSessionLoop(configsRel, configId, resultsRel) {
+function buildAgentSessionLoop(executionMode, configsRel, configId, resultsRel) {
   const configsFlag = `--configs ${configsRel.replaceAll('\\', '/')}`;
   const configFlag = `--config ${configId}`;
   const resultsFlag = `--results ${resultsRel.replaceAll('\\', '/')}`;
+  const agentName = executionMode === CURSOR_ADAPTER ? 'Cursor' : 'Claude Code';
   const lines = [
-    'Cursor-session benchmark loop (no 9Router, no OPENAI_API_KEY):',
+    `${executionMode} benchmark loop (no 9Router, no OPENAI_API_KEY):`,
     '',
     'For each scenario iteration (pilot first, then full track as needed):',
     `  1. npm run benchmark:agents -- prepare ${configsFlag} ${configFlag} --scenario <ID> --iteration <N> ${resultsFlag}`,
-    '  2. Complete the printed prompt inside the prepared workspace in this Cursor session.',
+    `  2. Complete the printed prompt inside the prepared workspace in this ${agentName} session.`,
     `  3. npm run benchmark:agents -- verify ${configsFlag} ${configFlag} --scenario <ID> --iteration <N> ${resultsFlag} --final-message "<handoff>"`,
     '',
     'Pilot scenarios:',
     ...PILOT_SCENARIOS.map(id => `  - ${id}`),
     '',
-    'After all scenarios are verified, aggregate the report:',
+    'After all scenarios are verified, aggregate the diagnostic report:',
     `  npm run benchmark:agents -- full ${configsFlag} ${configFlag} --track all --iterations 3 ${resultsFlag}`,
   ];
   return lines.join('\n');
@@ -237,7 +270,7 @@ function main() {
     throw new Error('benchmarks/models.json must use schemaVersion 1 with a provider block');
   }
 
-  const executionMode = resolveExecutionMode(parsed.harness);
+  const executionMode = resolveExecutionMode(parsed.harness, parsed.mode);
   const built = buildConfig(parsed, executionMode, registry);
   const configsPath = join(ROOT, built.configsRel);
   const now = new Date().toISOString();
@@ -251,6 +284,7 @@ function main() {
       candidate.harness === parsed.harness
       && candidate.model === parsed.model
       && candidate.reasoningEffort === parsed.effort
+      && candidate.mode === parsed.mode
     )
   ));
   if (index === -1) {
@@ -266,6 +300,7 @@ function main() {
     modelEffort: parsed.modelEffort,
     model: parsed.model,
     reasoningEffort: parsed.effort,
+    mode: parsed.mode,
     configId: built.configId,
     configsPath: built.configsRel.replaceAll('\\', '/'),
     modelsPath: 'benchmarks/models.json',
@@ -275,28 +310,38 @@ function main() {
     executableAdapter: built.entry.adapter,
     preflight: executionMode === CODEX_ADAPTER
       ? ['OPENAI_API_KEY must be set', '127.0.0.1:9011 must be reachable']
-      : [],
+      : executionMode === CODEX_NATIVE_ADAPTER
+        ? ['Codex CLI must be available with an active native login']
+        : [],
     pilotScenarios: PILOT_SCENARIOS,
   };
 
-  if (executionMode === CODEX_ADAPTER) {
+  if (executionMode === CODEX_ADAPTER || executionMode === CODEX_NATIVE_ADAPTER) {
     output.command = buildCodexCommand(built.configsRel, built.configId, built.resultsRel);
   } else {
-    output.cursorSessionLoop = buildCursorSessionLoop(
+    output.agentSessionLoop = buildAgentSessionLoop(
+      executionMode,
       built.configsRel,
       built.configId,
       built.resultsRel,
     );
+    if (executionMode === CURSOR_ADAPTER) {
+      output.cursorSessionLoop = output.agentSessionLoop;
+    } else {
+      output.claudeSessionLoop = output.agentSessionLoop;
+    }
   }
 
   console.log(JSON.stringify(output, undefined, 2));
   console.log('');
-  if (executionMode === CODEX_ADAPTER) {
-    console.log('Preflight: require OPENAI_API_KEY and confirm 127.0.0.1:9011 is open.');
+  if (executionMode === CODEX_ADAPTER || executionMode === CODEX_NATIVE_ADAPTER) {
+    console.log(executionMode === CODEX_ADAPTER
+      ? 'Preflight: require OPENAI_API_KEY and confirm 127.0.0.1:9011 is open.'
+      : 'Preflight: require Codex CLI with an active native login; 9Router and OPENAI_API_KEY are not used.');
     console.log('Run:');
     console.log(output.command);
   } else {
-    console.log(output.cursorSessionLoop);
+    console.log(output.agentSessionLoop);
   }
 }
 

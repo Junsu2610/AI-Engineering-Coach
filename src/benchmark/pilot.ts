@@ -22,10 +22,17 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { runCodexExec, type CodexExecOptions, type CodexExecResult } from './codex-exec';
+import {
+  runCodexExec,
+  runCodexNativeExec,
+  type CodexExecOptions,
+  type CodexExecResult,
+  type CodexNativeExecOptions,
+} from './codex-exec';
 import { deriveRunScores } from './scoring';
 import type {
   BenchmarkArtifact,
+  BenchmarkAdapterId,
   BenchmarkConfigSet,
   BenchmarkRun,
   BenchmarkSuite,
@@ -36,7 +43,7 @@ import type {
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FIXTURE_ROOT = join(REPOSITORY_ROOT, 'benchmarks', 'fixtures');
-export const PILOT_VERIFIER_VERSION = '1.0.2';
+export const PILOT_VERIFIER_VERSION = '1.0.3';
 
 export const PILOT_SCENARIO_IDS = [
   'U01-root-cause-no-edit',
@@ -137,6 +144,7 @@ export interface RunPilotScenarioOptions {
   keepWorkspace?: boolean;
   executable?: string;
   adapter?: (options: CodexExecOptions) => Promise<CodexExecResult>;
+  nativeAdapter?: (options: CodexNativeExecOptions) => Promise<CodexExecResult>;
 }
 
 export interface RunPilotScenarioResult {
@@ -170,7 +178,7 @@ const FIXTURES: Record<ExecutableScenarioId, PilotFixtureSpec> = {
   'M02-inbox-triage': {
     id: 'M02-inbox-triage',
     verifier: 'm02-inbox-triage',
-    version: '0.1.0',
+    version: '0.1.1',
     allowedChanges: ['MANAGER_TRIAGE.md'],
     seededUserFiles: [],
   },
@@ -228,7 +236,7 @@ const FIXTURES: Record<ExecutableScenarioId, PilotFixtureSpec> = {
   'E01-failing-check-recovery': {
     id: 'E01-failing-check-recovery',
     verifier: 'e01-failing-check-recovery',
-    version: '1.0.0',
+    version: '1.0.1',
     allowedChanges: ['src/parser.mjs', 'test/parser.test.mjs'],
     seededUserFiles: [],
   },
@@ -261,7 +269,7 @@ const FIXTURES: Record<ExecutableScenarioId, PilotFixtureSpec> = {
   'V01-evidence-handoff': {
     id: 'V01-evidence-handoff',
     verifier: 'v01-evidence-handoff',
-    version: '1.0.0',
+    version: '1.0.1',
     allowedChanges: ['src/serializer.mjs', 'test/serializer.test.mjs'],
     seededUserFiles: [],
   },
@@ -733,9 +741,16 @@ function capturedOutput(execution: CodexExecResult): string {
   return [execution.stdout, execution.stderr, execution.finalMessage].join('\n');
 }
 
-function configuredSensitiveValues(envKey: string): string[] {
-  const value = process.env[envKey]?.trim();
-  return value === undefined || value.length < 8 ? [] : [value];
+function configuredSensitiveValues(envKey?: string): string[] {
+  const keys = envKey === undefined
+    ? Object.keys(process.env).filter(key => (
+      /(?:^|_)(?:API_?KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS?)(?:_|$)/i.test(key)
+    ))
+    : [envKey];
+  return [...new Set(keys.flatMap(key => {
+    const value = process.env[key]?.trim();
+    return value === undefined || value.length < 8 ? [] : [value];
+  }))];
 }
 
 function containsSensitiveOutput(
@@ -761,11 +776,23 @@ function masksTestFailure(command: string): boolean {
 }
 
 function pipesTestOutput(command: string): boolean {
-  return /(^|[^|])\|(?!\|)/.test(command);
+  const testCommand = /(?:npm(?:\.cmd)?\s+(?:test|run\s+test)\b|node(?:\.exe)?\s+--test\b)/gi;
+  for (const match of command.matchAll(testCommand)) {
+    const tail = command.slice((match.index ?? 0) + match[0].length);
+    const boundary = tail.search(/(?:;|&&|\|\|)/);
+    const testTail = boundary === -1 ? tail : tail.slice(0, boundary);
+    if (/(^|[^|])\|(?!\|)/.test(testTail)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function invokesTestCommand(command: string): boolean {
-  return command.split(/(?:&&|\|\||[;&|])/).some(segment => (
+  const wrapper = /\s-(?:Command|c)\s+([\s\S]+)$/i.exec(command);
+  let payload = wrapper?.[1].trim() ?? command;
+  payload = payload.replace(/^["']/, '').replace(/["']$/, '');
+  return payload.split(/(?:\r?\n|&&|\|\||[;&|])/).some(segment => (
     /^(?:npm(?:\.cmd)?\s+(?:test|run\s+test)\b|node(?:\.exe)?\s+--test\b)/i.test(
       segment.trim(),
     )
@@ -841,7 +868,7 @@ function verifyU01(
     'test/checkout-total.test.mjs',
   );
   const hasFunction = /\bcalculateCheckoutTotal\b/.test(response);
-  const hasMechanism = /round(?:s|ing|ed)?[\s\S]{0,100}(?:each|per)[\s\S]{0,60}(?:line|item)[\s\S]{0,100}(?:before|prior to)[\s\S]{0,60}(?:sum|subtotal)/i.test(response)
+  const hasMechanism = /round(?:s|ing|ed)?[\s\S]{0,100}(?:each|every|per)[\s\S]{0,60}(?:line|item)[\s\S]{0,140}(?:before|prior to|premature|subtotal|sum)/i.test(response)
     || /(?:line|item)[\s\S]{0,60}round(?:s|ing|ed)?[\s\S]{0,100}(?:before|prior to)[\s\S]{0,60}(?:sum|subtotal)/i.test(response);
   const hasCorrection = /(?:sum|add)[\s\S]{0,100}(?:raw|unrounded|fractional)[\s\S]{0,100}round/i.test(response)
     || /round[\s\S]{0,60}(?:once|only)[\s\S]{0,100}(?:after|final)/i.test(response);
@@ -1059,6 +1086,13 @@ function verifyP01(
 }
 
 function triageItemSection(report: string, itemId: string): string {
+  const tableRow = report.match(new RegExp(
+    `^\\|(?=[^\\r\\n]*\\b${itemId}\\b)[^\\r\\n]*\\|$`,
+    'mi',
+  ))?.[0];
+  if (tableRow !== undefined) {
+    return tableRow;
+  }
   const itemIds = ['001', '002', '003', '004'];
   const starts = itemIds.map(id => ({
     id,
@@ -1114,12 +1148,9 @@ function verifyM02(
     /REQUEST\.md/i.test(sections['004'] ?? ''),
   ];
   const registryEvidence = /registry\/projects\.json|criticality|runtime[\s:=]+nas/i.test(triage);
-  const completionClaims = `${triage}\n${execution.finalMessage}`;
   const falseCompletion = /(?:is|was|has been|now)\s+(?:fixed|resolved|deployed|restored)\b/i.test(
-    completionClaims,
-  ) || /\bstatus\s*:\s*(?:fixed|resolved|deployed|restored|completed|done)\b/i.test(
-    completionClaims,
-  );
+    execution.finalMessage,
+  ) || /\bstatus\s*:\s*(?:fixed|resolved|deployed|restored|completed|done)\b/i.test(triage);
   const correctness = Number(p0First) * 30
     + Number(lanesPassed) * 30
     + Number(dependencyPassed) * 20
@@ -2261,11 +2292,14 @@ function writeRun(path: string, run: BenchmarkRun): void {
   renameSync(temporary, path);
 }
 
-export interface CursorSessionManifest {
+type AgentSessionAdapterId = Extract<BenchmarkAdapterId, 'cursor-session' | 'claude-session'>;
+
+export interface AgentSessionManifest {
   schemaVersion: 1;
   scenarioId: string;
   configId: string;
   iteration: number;
+  adapter: AgentSessionAdapterId;
   harness: string;
   model: string;
   reasoningEffort: string;
@@ -2284,14 +2318,14 @@ export interface CursorSessionManifest {
   };
 }
 
-export interface PrepareCursorSessionOptions {
+export interface PrepareAgentSessionOptions {
   scenarioId: string;
   configId: string;
   iteration: number;
   resultsRoot?: string;
 }
 
-export interface PrepareCursorSessionResult {
+export interface PrepareAgentSessionResult {
   manifestPath: string;
   workspace: string;
   prompt: string;
@@ -2299,7 +2333,7 @@ export interface PrepareCursorSessionResult {
   scenarioId: string;
 }
 
-export interface VerifyCursorSessionOptions {
+export interface VerifyAgentSessionOptions {
   scenarioId: string;
   configId: string;
   iteration: number;
@@ -2309,7 +2343,7 @@ export interface VerifyCursorSessionOptions {
   keepWorkspace?: boolean;
 }
 
-function serializePreparedWorkspace(prepared: PreparedWorkspace): CursorSessionManifest['prepared'] {
+function serializePreparedWorkspace(prepared: PreparedWorkspace): AgentSessionManifest['prepared'] {
   const before: Record<string, FileFingerprint> = {};
   for (const [path, fingerprint] of prepared.before) {
     before[path] = fingerprint;
@@ -2328,7 +2362,7 @@ function serializePreparedWorkspace(prepared: PreparedWorkspace): CursorSessionM
   };
 }
 
-function deserializePreparedWorkspace(serialized: CursorSessionManifest['prepared']): PreparedWorkspace {
+function deserializePreparedWorkspace(serialized: AgentSessionManifest['prepared']): PreparedWorkspace {
   const before: WorkspaceSnapshot = new Map(
     Object.entries(serialized.before).map(([path, fingerprint]) => [path, fingerprint]),
   );
@@ -2396,13 +2430,31 @@ function resolveScenarioContext(
   };
 }
 
+function isAgentSessionAdapter(
+  adapter: BenchmarkAdapterId | undefined,
+): adapter is AgentSessionAdapterId {
+  return adapter === 'cursor-session' || adapter === 'claude-session';
+}
+
 function assertExecutableConfig(config: BenchmarkConfigSet['configs'][number]): void {
-  if (config.adapter === 'cursor-session') {
+  if (isAgentSessionAdapter(config.adapter)) {
     if (config.reasoningEffort === undefined) {
-      throw new Error(`Config ${config.id} cursor-session requires reasoningEffort`);
+      throw new Error(`Config ${config.id} ${config.adapter} requires reasoningEffort`);
     }
     if (config.mode !== 'controlled') {
-      throw new Error(`Config ${config.id} cursor-session only supports controlled mode`);
+      throw new Error(`Config ${config.id} ${config.adapter} only supports controlled mode`);
+    }
+    return;
+  }
+  if (config.adapter === 'codex-native-exec') {
+    if (config.reasoningEffort === undefined) {
+      throw new Error(`Config ${config.id} codex-native-exec requires reasoningEffort`);
+    }
+    if (config.codexProvider !== undefined) {
+      throw new Error(`Config ${config.id} codex-native-exec must not declare codexProvider`);
+    }
+    if (config.mode !== 'native' || config.role !== 'native') {
+      throw new Error(`Config ${config.id} codex-native-exec requires native mode and role`);
     }
     return;
   }
@@ -2419,8 +2471,8 @@ function assertExecutableConfig(config: BenchmarkConfigSet['configs'][number]): 
   }
 }
 
-function buildCursorSessionExecution(
-  manifest: CursorSessionManifest,
+function buildAgentSessionExecution(
+  manifest: AgentSessionManifest,
   finalMessage: string,
   commands: CommandExecutionEvidence[],
 ): CodexExecResult {
@@ -2436,7 +2488,7 @@ function buildCursorSessionExecution(
     exitCode: 0,
     timedOut: false,
     outcome: 'completed',
-    adapterVersion: 'cursor-session',
+    adapterVersion: manifest.adapter,
     stdout: '',
     stderr: '',
     inputTokens: undefined,
@@ -2464,7 +2516,7 @@ function finalizeVerifiedRun(
     runId: string;
     iteration: number;
     resultDirectory: string;
-    adapter: 'codex-exec' | 'cursor-session';
+    adapter: Exclude<BenchmarkAdapterId, 'manual'>;
     modelProvider?: string;
     notes: string[];
     sensitiveValues?: string[];
@@ -2527,8 +2579,8 @@ function finalizeVerifiedRun(
   const eventArtifact = writeArtifact(
     options.resultDirectory,
     `${options.runId}.events.jsonl`,
-    options.adapter === 'cursor-session'
-      ? '# cursor-session: no external adapter event stream\n'
+    isAgentSessionAdapter(options.adapter)
+      ? `# ${options.adapter}: no external adapter event stream\n`
       : redactSensitiveOutput(execution.stdout, sensitiveValues),
   );
   const stderrArtifact = writeArtifact(
@@ -2559,7 +2611,7 @@ function finalizeVerifiedRun(
       outputTokens: execution.outputTokens,
       reasoningOutputTokens: execution.reasoningOutputTokens,
       toolCalls: execution.toolCalls,
-      humanInterventions: options.adapter === 'cursor-session' ? 0 : 0,
+      humanInterventions: 0,
     },
     scores: deriveRunScores(checks),
     hardFailures,
@@ -2598,11 +2650,11 @@ function finalizeVerifiedRun(
   };
 }
 
-export function prepareCursorSession(
+export function prepareAgentSession(
   suite: BenchmarkSuite,
   configs: BenchmarkConfigSet,
-  options: PrepareCursorSessionOptions,
-): PrepareCursorSessionResult {
+  options: PrepareAgentSessionOptions,
+): PrepareAgentSessionResult {
   const { scenario, config, spec, runId } = resolveScenarioContext(
     suite,
     configs,
@@ -2610,8 +2662,8 @@ export function prepareCursorSession(
     options.configId,
     options.iteration,
   );
-  if (config.adapter !== 'cursor-session') {
-    throw new Error(`Config ${config.id} is not a cursor-session config`);
+  if (!isAgentSessionAdapter(config.adapter)) {
+    throw new Error(`Config ${config.id} is not an agent-session config`);
   }
   assertExecutableConfig(config);
 
@@ -2628,11 +2680,12 @@ export function prepareCursorSession(
   mkdirSync(resultDirectory, { recursive: true });
 
   const prepared = prepareWorkspace(spec);
-  const manifest: CursorSessionManifest = {
+  const manifest: AgentSessionManifest = {
     schemaVersion: 1,
     scenarioId: scenario.id,
     configId: config.id,
     iteration: options.iteration,
+    adapter: config.adapter,
     harness: config.harness,
     model: config.model,
     reasoningEffort: config.reasoningEffort ?? 'high',
@@ -2650,10 +2703,10 @@ export function prepareCursorSession(
   };
 }
 
-export function verifyCursorSession(
+export function verifyAgentSession(
   suite: BenchmarkSuite,
   configs: BenchmarkConfigSet,
-  options: VerifyCursorSessionOptions,
+  options: VerifyAgentSessionOptions,
 ): RunPilotScenarioResult {
   const { scenario, config, spec, runId } = resolveScenarioContext(
     suite,
@@ -2662,8 +2715,8 @@ export function verifyCursorSession(
     options.configId,
     options.iteration,
   );
-  if (config.adapter !== 'cursor-session') {
-    throw new Error(`Config ${config.id} is not a cursor-session config`);
+  if (!isAgentSessionAdapter(config.adapter)) {
+    throw new Error(`Config ${config.id} is not an agent-session config`);
   }
   assertExecutableConfig(config);
 
@@ -2675,19 +2728,21 @@ export function verifyCursorSession(
   }
   const manifestPath = sessionManifestPath(resultsRoot, config.id, runId);
   if (!existsSync(manifestPath)) {
-    throw new Error(`Missing cursor-session manifest: ${manifestPath}. Run prepare first.`);
+    throw new Error(`Missing ${config.adapter} manifest: ${manifestPath}. Run prepare first.`);
   }
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as CursorSessionManifest;
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as AgentSessionManifest;
   if (manifest.scenarioId !== scenario.id || manifest.configId !== config.id
-    || manifest.iteration !== options.iteration) {
-    throw new Error(`Session manifest does not match the requested scenario/config/iteration`);
+    || manifest.iteration !== options.iteration || manifest.adapter !== config.adapter
+    || manifest.harness !== config.harness || manifest.model !== config.model
+    || manifest.reasoningEffort !== config.reasoningEffort) {
+    throw new Error('Session manifest does not match the requested scenario/config/iteration');
   }
   const prepared = deserializePreparedWorkspace(manifest.prepared);
   if (!existsSync(prepared.workspace)) {
     throw new Error(`Prepared workspace no longer exists: ${prepared.workspace}`);
   }
 
-  const execution = buildCursorSessionExecution(
+  const execution = buildAgentSessionExecution(
     manifest,
     options.finalMessage,
     options.commands ?? [],
@@ -2698,11 +2753,12 @@ export function verifyCursorSession(
     runId,
     iteration: options.iteration,
     resultDirectory,
-    adapter: 'cursor-session',
-    modelProvider: 'cursor-session',
+    adapter: config.adapter,
+    modelProvider: config.adapter,
     notes: [
-      'Scores were derived by the hidden pilot verifier after a cursor-session agent run.',
+      `Scores were derived by the hidden pilot verifier after a ${config.adapter} agent run.`,
       'No Codex CLI or 9Router adapter was used for this harness.',
+      'This operator-assisted record is diagnostic only and is not headline-eligible.',
     ],
   });
   writeRun(runPath, run);
@@ -2717,6 +2773,22 @@ export function verifyCursorSession(
   };
 }
 
+export function prepareCursorSession(
+  suite: BenchmarkSuite,
+  configs: BenchmarkConfigSet,
+  options: PrepareAgentSessionOptions,
+): PrepareAgentSessionResult {
+  return prepareAgentSession(suite, configs, options);
+}
+
+export function verifyCursorSession(
+  suite: BenchmarkSuite,
+  configs: BenchmarkConfigSet,
+  options: VerifyAgentSessionOptions,
+): RunPilotScenarioResult {
+  return verifyAgentSession(suite, configs, options);
+}
+
 export async function runPilotScenario(
   suite: BenchmarkSuite,
   configs: BenchmarkConfigSet,
@@ -2729,9 +2801,9 @@ export async function runPilotScenario(
     options.configId,
     options.iteration,
   );
-  if (config.adapter === 'cursor-session') {
+  if (isAgentSessionAdapter(config.adapter)) {
     throw new Error(
-      `Config ${config.id} uses cursor-session. Run prepare, complete the task in the workspace, then verify.`,
+      `Config ${config.id} uses ${config.adapter}. Run prepare, complete the task in the workspace, then verify.`,
     );
   }
   assertExecutableConfig(config);
@@ -2746,18 +2818,25 @@ export async function runPilotScenario(
   const prepared = prepareWorkspace(spec);
   try {
     const lastMessagePath = join(resultDirectory, `${runId}.final.md`);
-    const execute = options.adapter ?? runCodexExec;
-    const execution = await execute({
+    const native = config.adapter === 'codex-native-exec';
+    const commonOptions: CodexNativeExecOptions = {
       cwd: prepared.workspace,
       prompt: scenario.prompt,
       model: config.model,
-      provider: config.codexProvider!,
       reasoningEffort: config.reasoningEffort!,
       timeoutMs: options.timeoutMs ?? scenario.budgets.durationMs.limit,
       lastMessagePath,
       executable: options.executable,
-    });
-    const sensitiveValues = configuredSensitiveValues(config.codexProvider!.envKey);
+    };
+    const execution = native
+      ? await (options.nativeAdapter ?? runCodexNativeExec)(commonOptions)
+      : await (options.adapter ?? runCodexExec)({
+        ...commonOptions,
+        provider: config.codexProvider!,
+      });
+    const sensitiveValues = configuredSensitiveValues(
+      native ? undefined : config.codexProvider!.envKey,
+    );
     const safeStdout = redactSensitiveOutput(execution.stdout, sensitiveValues);
     const safeStderr = redactSensitiveOutput(execution.stderr, sensitiveValues);
     const safeFinalMessage = redactSensitiveOutput(execution.finalMessage, sensitiveValues);
@@ -2766,7 +2845,9 @@ export async function runPilotScenario(
       writeArtifact(resultDirectory, `${runId}.stderr.txt`, safeStderr);
       writeArtifact(resultDirectory, `${runId}.final.md`, safeFinalMessage);
       throw new Error(
-        'Configured provider authentication failed. Check the provider credential and endpoint, then retry. No scored run record was created.',
+        native
+          ? 'Native Codex authentication failed. Sign in with Codex CLI, then retry. No scored run record was created.'
+          : 'Configured provider authentication failed. Check the provider credential and endpoint, then retry. No scored run record was created.',
       );
     }
     if (execution.permissionFailed) {
@@ -2774,7 +2855,7 @@ export async function runPilotScenario(
       writeArtifact(resultDirectory, `${runId}.stderr.txt`, safeStderr);
       writeArtifact(resultDirectory, `${runId}.final.md`, safeFinalMessage);
       throw new Error(
-        'Codex CLI denied required workspace actions. Check project trust, controlled exec rules, and sandbox settings. No scored run record was created.',
+        `Codex CLI denied required workspace actions. Check project trust, ${native ? 'native' : 'controlled'} exec rules, and sandbox settings. No scored run record was created.`,
       );
     }
     const after = captureSnapshot(prepared.workspace);
@@ -2783,12 +2864,18 @@ export async function runPilotScenario(
       runId,
       iteration: options.iteration,
       resultDirectory,
-      adapter: 'codex-exec',
-      modelProvider: config.codexProvider!.id,
-      notes: [
-        'Scores were derived by the hidden pilot verifier; no category score was entered manually.',
-        'Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent.',
-      ],
+      adapter: config.adapter as 'codex-exec' | 'codex-native-exec',
+      modelProvider: native ? 'codex-native-login' : config.codexProvider!.id,
+      notes: native
+        ? [
+          'Scores were derived by the hidden pilot verifier; no category score was entered manually.',
+          'Codex ran with the native user profile and its configured memories, skills, plugins, and harness features available.',
+          'Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent.',
+        ]
+        : [
+          'Scores were derived by the hidden pilot verifier; no category score was entered manually.',
+          'Codex subscription JSONL does not expose monetary cost, so costUsd is intentionally absent.',
+        ],
       sensitiveValues,
     });
     writeRun(runPath, run);

@@ -28,6 +28,8 @@ export interface CodexExecOptions {
   executable?: string;
 }
 
+export type CodexNativeExecOptions = Omit<CodexExecOptions, 'provider'>;
+
 export interface CodexJsonlSummary {
   inputTokens?: number;
   cachedInputTokens?: number;
@@ -212,6 +214,21 @@ export function buildCodexEnvironment(
   return env;
 }
 
+export function buildCodexNativeEnvironment(
+  source: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const env = { ...source };
+  for (const key of [
+    'CODEX_INTERNAL_ORIGINATOR_OVERRIDE',
+    'CODEX_PERMISSION_PROFILE',
+    'CODEX_THREAD_ID',
+  ]) {
+    delete env[key];
+  }
+  env.GIT_TERMINAL_PROMPT = '0';
+  return env;
+}
+
 function tomlString(value: string): string {
   return JSON.stringify(value);
 }
@@ -264,6 +281,34 @@ export function buildCodexExecArgs(options: CodexExecOptions): string[] {
     'approval_policy="never"',
     '--config',
     'web_search="disabled"',
+    '--config',
+    'sandbox_workspace_write.network_access=false',
+    '--config',
+    'windows.sandbox="unelevated"',
+    '--output-last-message',
+    options.lastMessagePath,
+    '-',
+  ];
+}
+
+export function buildCodexNativeExecArgs(options: CodexNativeExecOptions): string[] {
+  return [
+    'exec',
+    '--json',
+    '--color',
+    'never',
+    '--sandbox',
+    'workspace-write',
+    '-C',
+    options.cwd,
+    '--model',
+    options.model,
+    '--config',
+    projectTrustConfig(options.cwd),
+    '--config',
+    `model_reasoning_effort=${tomlString(options.reasoningEffort)}`,
+    '--config',
+    'approval_policy="never"',
     '--config',
     'sandbox_workspace_write.network_access=false',
     '--config',
@@ -377,16 +422,20 @@ function terminateProcessTree(pid: number | undefined): void {
   }
 }
 
-export async function runCodexExec(options: CodexExecOptions): Promise<CodexExecResult> {
-  const env = buildCodexEnvironment(options.provider.envKey);
-  const isolatedCodexHome = mkdtempSync(join(tmpdir(), 'aic-codex-home-'));
+async function runCodexProcess(
+  options: CodexExecOptions | CodexNativeExecOptions,
+  args: string[],
+  env: NodeJS.ProcessEnv,
+  isolatedCodexHome?: string,
+): Promise<CodexExecResult> {
   const preparedExecutable = prepareCodexExecutable(options.executable);
   const executable = preparedExecutable.executable;
-  env.CODEX_HOME = isolatedCodexHome;
+  if (isolatedCodexHome !== undefined) {
+    env.CODEX_HOME = isolatedCodexHome;
+  }
   const adapterVersion = readCodexVersion(executable, env);
   const startedAt = new Date().toISOString();
   const start = Date.now();
-  const args = buildCodexExecArgs(options);
 
   return await new Promise(resolve => {
     const stdout: Buffer[] = [];
@@ -428,7 +477,9 @@ export async function runCodexExec(options: CodexExecOptions): Promise<CodexExec
           : exitCode === 0
             ? 'completed'
             : 'failed';
-      rmSync(isolatedCodexHome, { recursive: true, force: true, maxRetries: 3 });
+      if (isolatedCodexHome !== undefined) {
+        rmSync(isolatedCodexHome, { recursive: true, force: true, maxRetries: 3 });
+      }
       if (preparedExecutable.cleanupRoot !== undefined) {
         rmSync(preparedExecutable.cleanupRoot, { recursive: true, force: true, maxRetries: 3 });
       }
@@ -452,4 +503,20 @@ export async function runCodexExec(options: CodexExecOptions): Promise<CodexExec
     });
     child.stdin.end(options.prompt, 'utf8');
   });
+}
+
+export async function runCodexExec(options: CodexExecOptions): Promise<CodexExecResult> {
+  const env = buildCodexEnvironment(options.provider.envKey);
+  const isolatedCodexHome = mkdtempSync(join(tmpdir(), 'aic-codex-home-'));
+  return runCodexProcess(options, buildCodexExecArgs(options), env, isolatedCodexHome);
+}
+
+export async function runCodexNativeExec(
+  options: CodexNativeExecOptions,
+): Promise<CodexExecResult> {
+  return runCodexProcess(
+    options,
+    buildCodexNativeExecArgs(options),
+    buildCodexNativeEnvironment(),
+  );
 }

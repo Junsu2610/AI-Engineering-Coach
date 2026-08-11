@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { loadReusableFullRun, selectFullScenarioIds } from './cli';
+import { loadReusableFullRun, pendingAgentSessionMessage, selectFullScenarioIds } from './cli';
 import { FULL_SCENARIO_IDS, PILOT_VERIFIER_VERSION, fixtureSha256ForScenario } from './pilot';
 import type { BenchmarkConfigSet, BenchmarkRun, BenchmarkSuite } from './types';
 
@@ -132,6 +132,45 @@ describe('full benchmark selection', () => {
       'SH10-runtime-boundary',
       'C01-large-context-routing',
     ]));
+  });
+});
+
+describe('agent session pending messages', () => {
+  let resultsRoot: string;
+
+  afterEach(() => {
+    if (resultsRoot !== undefined) {
+      rmSync(resultsRoot, { recursive: true, force: true, maxRetries: 3 });
+    }
+  });
+
+  it('identifies missing and pending claude-session runs', () => {
+    resultsRoot = mkdtempSync(join(tmpdir(), 'aic-claude-session-pending-'));
+    const configId = 'claudeext-gpt-5.6-sol-controlled-xhigh';
+    const scenarioId = 'U01-root-cause-no-edit';
+
+    expect(pendingAgentSessionMessage(
+      resultsRoot,
+      configId,
+      scenarioId,
+      1,
+      'claude-session',
+    )).toContain('Missing completed claude-session run');
+
+    const directory = join(resultsRoot, configId);
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      join(directory, `${scenarioId}-${configId}-r1.session.json`),
+      '{}\n',
+      'utf8',
+    );
+    expect(pendingAgentSessionMessage(
+      resultsRoot,
+      configId,
+      scenarioId,
+      1,
+      'claude-session',
+    )).toContain('Pending claude-session verify');
   });
 });
 
