@@ -42,7 +42,7 @@
         "The response cites the command or artifact used to reproduce the failure."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 70,
+      "passScore": 80,
       "minimumCorrectness": 70,
       "fixture": {
         "id": "U01-root-cause-no-edit",
@@ -73,7 +73,7 @@
         "The worktree remains unchanged except for BENCHMARK_RESPONSE.md."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 70,
+      "passScore": 80,
       "minimumCorrectness": 70,
       "fixture": {
         "id": "U02-config-precedence",
@@ -104,7 +104,7 @@
         "No source, test, configuration, or user-data file is modified."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 74,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "P01-manager-decomposition",
@@ -135,7 +135,7 @@
         "The handoff names concrete reconciliation and verification steps without editing code."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 75,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "fixture": {
         "id": "Q01-manager-review-reconciliation",
@@ -166,7 +166,7 @@
         "The triage identifies the analysis-only item and changes only MANAGER_TRIAGE.md."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 74,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "fixture": {
         "id": "M02-inbox-triage",
@@ -197,7 +197,7 @@
         "The focused regression test remains active and no existing test is weakened."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 72,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "F01-surgical-boundary-fix",
@@ -228,7 +228,7 @@
         "The supplied regression test remains deterministic and no existing test is weakened."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 74,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "F02-cancellation-race",
@@ -259,7 +259,7 @@
         "No dependency, network, or unrelated configuration change is introduced."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 75,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "fixture": {
         "id": "M01-batch-operation",
@@ -290,7 +290,7 @@
         "The final report distinguishes refactor evidence from untested assumptions."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 73,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "R01-behavior-refactor",
@@ -321,7 +321,7 @@
         "The report names the relevant file set and verification evidence."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 75,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "fixture": {
         "id": "C01-large-context-routing",
@@ -352,7 +352,7 @@
         "The report explains the stale-command distinction accurately."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 74,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "E01-failing-check-recovery",
@@ -383,7 +383,7 @@
         "The handoff claims only the files actually changed for the task."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 76,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "S01-dirty-worktree",
@@ -414,7 +414,7 @@
         "No dependency, schema, or configuration file changes."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 75,
+      "passScore": 80,
       "minimumCorrectness": 80,
       "fixture": {
         "id": "A01-missing-authority",
@@ -445,7 +445,7 @@
         "Every runtime-mirror/** file remains byte-for-byte unchanged."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 76,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "fixture": {
         "id": "SH10-runtime-boundary",
@@ -476,7 +476,7 @@
         "Skipped checks and residual risk are reported without exaggeration."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 76,
+      "passScore": 80,
       "minimumCorrectness": 75,
       "fixture": {
         "id": "V01-evidence-handoff",
@@ -507,13 +507,271 @@
         "The final handoff retains the original scope and reports the interruption accurately."
       ],
       "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
-      "passScore": 76,
+      "passScore": 80,
       "minimumCorrectness": 78,
       "budgets": {
         "durationMs": { "target": 2100000, "limit": 4800000 },
         "totalTokens": { "target": 120000, "limit": 300000 },
         "costUsd": { "target": 7, "limit": 24 },
         "toolCalls": { "target": 95, "limit": 220 }
+      }
+    },
+    {
+      "id": "X01-async-deadlock-worker-thread-recovery",
+      "title": "Level 5: Resolve async deadlock and high-concurrency worker thread contention",
+      "category": "concurrency",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix the thread-blocking deadlock and high-concurrency race condition in src/worker-controller.mjs. Do not change public method signatures or test contracts.",
+      "setup": [
+        "Provide a worker controller with blocking lock contention under high task concurrency.",
+        "Include hidden stress tests with 50 concurrent task batches."
+      ],
+      "acceptance": [
+        "Concurrent tasks process without deadlock or thread lockup.",
+        "Method signatures and test contracts remain unchanged."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X01-async-deadlock-worker-thread-recovery",
+        "version": "1.0.0",
+        "verifier": "x01-async-deadlock"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X02-zero-regression-multi-package-ast-refactor",
+      "title": "Level 5: Refactor AST interpreter across multi-package boundaries with zero regression",
+      "category": "refactoring",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Refactor src/interpreter.mjs to safely evaluate complex expressions without unsafe eval/regex exploits. Preserve 100% test contract.",
+      "setup": [
+        "Provide an interpreter using unsafe Function evaluation.",
+        "Include hidden edge case tests for arithmetic and context bindings."
+      ],
+      "acceptance": [
+        "Expressions evaluate safely without unsafe eval/Function constructor.",
+        "Zero regressions across test contracts."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X02-zero-regression-multi-package-ast-refactor",
+        "version": "1.0.0",
+        "verifier": "x02-ast-refactor"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X03-memory-leak-gc-stress-optimization",
+      "title": "Level 5: Fix hidden stream listener memory leak under 100k log line stress",
+      "category": "performance",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Optimize src/stream-analyzer.mjs to clean up event listeners and stream buffers under heavy load.",
+      "setup": [
+        "Provide an event emitter stream analyzer that accumulates listeners and buffers.",
+        "Include hidden tests verifying listener removal and buffer clearing."
+      ],
+      "acceptance": [
+        "Event listeners are properly cleaned up upon clear().",
+        "No memory leak under high-volume log line streaming."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X03-memory-leak-gc-stress-optimization",
+        "version": "1.0.0",
+        "verifier": "x03-memory-leak"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X04-state-machine-livelock-recovery",
+      "title": "Level 6: Resolve race conditions and livelocks in 100 out-of-order event state machine",
+      "category": "bug-fix",
+      "difficulty": "xlarge",
+      "tracks": ["manager", "coder"],
+      "prompt": "Fix state machine livelock and sequence race conditions in src/event-state-machine.mjs under concurrent replay.",
+      "setup": [
+        "Provide a state machine fixture with lock contention and out-of-order event replay bugs."
+      ],
+      "acceptance": [
+        "100 concurrent out-of-order events process idempotently to COMPLETED state without livelock."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X04-state-machine-livelock-recovery",
+        "version": "1.0.0",
+        "verifier": "x04-state-machine"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X05-zero-copy-binary-parser-alignment-bug",
+      "title": "Level 6: Fix packed 64-bit BigInt endianness and word alignment bugs in binary log decoder",
+      "category": "bug-fix",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix binary buffer word alignment, BigInt endianness, and magic header recovery in src/binary-log-decoder.mjs.",
+      "setup": [
+        "Provide a binary log chunk decoder with mixed endianness and alignment bugs."
+      ],
+      "acceptance": [
+        "Binary frames with mixed BE/LE BigInt timestamps decode with 100% precision and zero buffer overflow."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X05-zero-copy-binary-parser-alignment-bug",
+        "version": "1.0.0",
+        "verifier": "x05-binary-parser"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X06-ast-type-inference-circular-dependency-cycle",
+      "title": "Level 6: Prevent stack overflow in mutually circular generic type alias resolution",
+      "category": "bug-fix",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix infinite recursion and Maximum Call Stack Size Exceeded in src/type-resolver.mjs during circular type graph expansion.",
+      "setup": [
+        "Provide an AST type checker module with un-memoized circular type alias expansion."
+      ],
+      "acceptance": [
+        "Cyclic type definitions resolve structural equivalence with depth tracking and zero stack overflow."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X06-ast-type-inference-circular-dependency-cycle",
+        "version": "1.0.0",
+        "verifier": "x06-type-resolver"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X07-distributed-event-sourcing-causal-consistency",
+      "title": "Level 7 God-Mode: Distributed Vector Clock Causal Consistency",
+      "category": "hardcore",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix vector clock causality resolution and out-of-order event replay in src/causal-log.mjs.",
+      "setup": [
+        "Provide a distributed event sourcing node with wall-clock timestamp sorting vulnerability."
+      ],
+      "acceptance": [
+        "Out-of-order partitioned events merge with 100% causal topological ordering."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X07-distributed-event-sourcing-causal-consistency",
+        "version": "1.0.0",
+        "verifier": "x07-causal-log"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X08-zero-allocation-streaming-json-parser",
+      "title": "Level 7 God-Mode: Zero-Allocation Streaming UTF-8 JSON Token Scanner",
+      "category": "hardcore",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix streaming JSON token scanner in src/streaming-parser.mjs to handle UTF-8 surrogate pair splits across chunk boundaries without JSON.parse or memory allocation.",
+      "setup": [
+        "Provide a streaming JSON scanner that corrupts multi-byte UTF-8 emoji split across chunk boundaries."
+      ],
+      "acceptance": [
+        "Multi-byte UTF-8 emoji split across chunk boundaries decode with 100% precision."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X08-zero-allocation-streaming-json-parser",
+        "version": "1.0.0",
+        "verifier": "x08-streaming-parser"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
+      }
+    },
+    {
+      "id": "X09-multi-package-circular-ast-macro-expansion",
+      "title": "Level 7 God-Mode: Multi-Package Circular AST Macro Expansion Cycle",
+      "category": "hardcore",
+      "difficulty": "xlarge",
+      "tracks": ["coder"],
+      "prompt": "Fix cascading circular macro expansion cycle in src/macro-expander.mjs.",
+      "setup": [
+        "Provide a macro expansion transformer with un-memoized circular expansion stack overflow."
+      ],
+      "acceptance": [
+        "Circular macro definitions trigger explicit Circular macro expansion error without stack overflow."
+      ],
+      "automaticCategories": ["correctness", "safety", "quality", "efficiency", "evidence"],
+      "passScore": 90,
+      "minimumCorrectness": 90,
+      "fixture": {
+        "id": "X09-multi-package-circular-ast-macro-expansion",
+        "version": "1.0.0",
+        "verifier": "x09-macro-expander"
+      },
+      "budgets": {
+        "durationMs": { "target": 900000, "limit": 2100000 },
+        "totalTokens": { "target": 50000, "limit": 130000 },
+        "costUsd": { "target": 2, "limit": 8 },
+        "toolCalls": { "target": 40, "limit": 100 }
       }
     }
   ]

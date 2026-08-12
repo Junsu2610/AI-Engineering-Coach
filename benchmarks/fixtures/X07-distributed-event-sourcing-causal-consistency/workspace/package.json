@@ -1,0 +1,9 @@
+{
+  "name": "X07-distributed-event-sourcing-causal-consistency",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/causal-log.test.mjs"
+  }
+}

@@ -64,8 +64,36 @@ function trackRow(configId: string, summary: TrackSummary): string {
   ].join(' | ');
 }
 
+function projectReadinessTier(score: number): string {
+  if (score >= 90) return 'Elite Architect';
+  if (score >= 80) return 'Project Standard';
+  return 'Needs Improvement';
+}
+
+function pairRow(summary: ConfigSummary): string {
+  const managerTrack = summary.tracks.find(t => t.track === 'manager');
+  const coderTrack = summary.tracks.find(t => t.track === 'coder');
+  const managerScore = managerTrack ? `${managerTrack.score.toFixed(2)}` : '-';
+  const coderScore = coderTrack ? `${coderTrack.score.toFixed(2)}` : '-';
+  const pairName = `${summary.config.harness} + ${summary.config.model}`;
+  const tier = projectReadinessTier(summary.score);
+
+  return [
+    escapeCell(pairName),
+    escapeCell(summary.config.id),
+    summary.score.toFixed(2),
+    escapeCell(tier),
+    `${summary.successRate.toFixed(1)}%`,
+    String(summary.hardFailureCount),
+    managerScore,
+    coderScore,
+    formatDuration(summary.p50DurationMs),
+  ].join(' | ');
+}
+
 export function renderBenchmarkReport(summary: BenchmarkSummary): string {
   const rows = summary.configs.map(configRow).join('\n');
+  const pairRows = summary.configs.map(pairRow).join('\n');
   const headlineRows = summary.configs.map(config => (
     `- ${escapeCell(config.config.id)}: ${config.headlineEligible
       ? `eligible (${config.completedScenarioCount}/${config.requiredScenarioCount} executable scenarios)`
@@ -88,6 +116,12 @@ Generated: ${summary.generatedAt}
 Config | Harness | Model | Mode | Score | Headline | Success | Hard failures | p50 time | p90 time | Cost / accepted task | Model baseline | Harness uplift | Native score
 --- | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:
 ${rows}
+
+## Harness and Model Pair Real-World Project Performance
+
+Config Pair | Config ID | Overall Score | Project Tier | Success Rate | Hard Failures | Manager Score | Coder Score | p50 Task Time
+--- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---:
+${pairRows}
 
 ## Headline Eligibility
 

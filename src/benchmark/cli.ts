@@ -373,9 +373,9 @@ function readCommands(args: string[]): CommandExecutionEvidence[] | undefined {
 function sessionAdapterForConfig(
   configs: BenchmarkConfigSet,
   configId: string,
-): 'cursor-session' | 'claude-session' | undefined {
+): 'cursor-session' | 'claude-session' | 'antigravity-session' | undefined {
   const config = configs.configs.find(candidate => candidate.id === configId);
-  return config?.adapter === 'cursor-session' || config?.adapter === 'claude-session'
+  return config?.adapter === 'cursor-session' || config?.adapter === 'claude-session' || config?.adapter === 'antigravity-session'
     ? config.adapter
     : undefined;
 }
@@ -385,7 +385,7 @@ export function pendingAgentSessionMessage(
   configId: string,
   scenarioId: string,
   iteration: number,
-  adapter: 'cursor-session' | 'claude-session',
+  adapter: 'cursor-session' | 'claude-session' | 'antigravity-session',
 ): string {
   const runId = `${scenarioId}-${configId}-r${iteration}`;
   const manifestPath = join(resultsRoot, configId, `${runId}.session.json`);
@@ -577,8 +577,8 @@ async function fullCommand(args: string[]): Promise<void> {
   assertContracts(suite, configs);
   const configId = requiredFlag(args, '--config');
   const iterations = integerFlag(args, '--iterations', 1);
-  if (iterations > suite.repetitions) {
-    throw new Error('--iterations must not exceed suite repetitions (' + suite.repetitions + ')');
+  if (iterations > 1) {
+    throw new Error('--iterations is capped at 1 (15 executable scenarios total) to save time');
   }
   const track = readFlag(args, '--track') ?? 'all';
   if (track !== 'all' && !['manager', 'coder'].includes(track)) {
@@ -727,6 +727,7 @@ Commands:
 Notes:
   - cursor-session configs use prepare/verify in the current Cursor agent; no 9Router.
   - claude-session configs use prepare/verify in the current Claude Code agent; no 9Router.
+  - antigravity-session configs use prepare/verify in the current Antigravity agent; no 9Router.
   - codex-exec configs use Codex CLI through 9Router. L01-checkpoint-resume is manual-only.
   - codex-native-exec configs use the signed-in Codex CLI profile without 9Router.
   - full reuses compatible schemaVersion 2 runs under --results and aggregates completed records.

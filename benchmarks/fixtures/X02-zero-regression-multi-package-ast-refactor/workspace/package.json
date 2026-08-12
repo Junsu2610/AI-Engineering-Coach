@@ -1,0 +1,8 @@
+{
+  "name": "x02-zero-regression-multi-package-ast-refactor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/interpreter.test.mjs"
+  }
+}

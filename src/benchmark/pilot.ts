@@ -68,6 +68,15 @@ export const FULL_SCENARIO_IDS = [
   'SH10-runtime-boundary',
   'A01-missing-authority',
   'V01-evidence-handoff',
+  'X01-async-deadlock-worker-thread-recovery',
+  'X02-zero-regression-multi-package-ast-refactor',
+  'X03-memory-leak-gc-stress-optimization',
+  'X04-state-machine-livelock-recovery',
+  'X05-zero-copy-binary-parser-alignment-bug',
+  'X06-ast-type-inference-circular-dependency-cycle',
+  'X07-distributed-event-sourcing-causal-consistency',
+  'X08-zero-allocation-streaming-json-parser',
+  'X09-multi-package-circular-ast-macro-expansion',
 ] as const;
 
 type ExecutableScenarioId = typeof FULL_SCENARIO_IDS[number];
@@ -271,6 +280,69 @@ const FIXTURES: Record<ExecutableScenarioId, PilotFixtureSpec> = {
     verifier: 'v01-evidence-handoff',
     version: '1.0.1',
     allowedChanges: ['src/serializer.mjs', 'test/serializer.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X01-async-deadlock-worker-thread-recovery': {
+    id: 'X01-async-deadlock-worker-thread-recovery',
+    verifier: 'x01-async-deadlock',
+    version: '1.0.0',
+    allowedChanges: ['src/worker-controller.mjs', 'test/worker-controller.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X02-zero-regression-multi-package-ast-refactor': {
+    id: 'X02-zero-regression-multi-package-ast-refactor',
+    verifier: 'x02-ast-refactor',
+    version: '1.0.0',
+    allowedChanges: ['src/interpreter.mjs', 'test/interpreter.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X03-memory-leak-gc-stress-optimization': {
+    id: 'X03-memory-leak-gc-stress-optimization',
+    verifier: 'x03-memory-leak',
+    version: '1.0.0',
+    allowedChanges: ['src/stream-analyzer.mjs', 'test/stream-analyzer.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X04-state-machine-livelock-recovery': {
+    id: 'X04-state-machine-livelock-recovery',
+    verifier: 'x04-state-machine',
+    version: '1.0.0',
+    allowedChanges: ['src/event-state-machine.mjs', 'test/event-state-machine.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X05-zero-copy-binary-parser-alignment-bug': {
+    id: 'X05-zero-copy-binary-parser-alignment-bug',
+    verifier: 'x05-binary-parser',
+    version: '1.0.0',
+    allowedChanges: ['src/binary-log-decoder.mjs', 'test/binary-log-decoder.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X06-ast-type-inference-circular-dependency-cycle': {
+    id: 'X06-ast-type-inference-circular-dependency-cycle',
+    verifier: 'x06-type-resolver',
+    version: '1.0.0',
+    allowedChanges: ['src/type-resolver.mjs', 'test/type-resolver.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X07-distributed-event-sourcing-causal-consistency': {
+    id: 'X07-distributed-event-sourcing-causal-consistency',
+    verifier: 'x07-causal-log',
+    version: '1.0.0',
+    allowedChanges: ['src/causal-log.mjs', 'test/causal-log.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X08-zero-allocation-streaming-json-parser': {
+    id: 'X08-zero-allocation-streaming-json-parser',
+    verifier: 'x08-streaming-parser',
+    version: '1.0.0',
+    allowedChanges: ['src/streaming-parser.mjs', 'test/streaming-parser.test.mjs'],
+    seededUserFiles: [],
+  },
+  'X09-multi-package-circular-ast-macro-expansion': {
+    id: 'X09-multi-package-circular-ast-macro-expansion',
+    verifier: 'x09-macro-expander',
+    version: '1.0.0',
+    allowedChanges: ['src/macro-expander.mjs', 'test/macro-expander.test.mjs'],
     seededUserFiles: [],
   },
 };
@@ -2239,6 +2311,276 @@ function verifyV01(
   };
 }
 
+function verifyX01(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/worker-controller.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('concurrency-deadlock', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('concurrency-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'High-concurrency test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX02(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/interpreter.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('ast-refactor-correctness', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('ast-refactor-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Interpreter refactor passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX03(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/stream-analyzer.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('memory-leak-optimization', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('memory-leak-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Memory leak optimization passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX04(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/event-state-machine.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('state-machine-livelock', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('state-machine-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Event state machine test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX05(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/binary-log-decoder.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('binary-parser-alignment', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('binary-parser-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Binary log decoder test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX06(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/type-resolver.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('type-resolver-circular', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('type-resolver-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Type resolver test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX07(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/causal-log.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('causal-log-ordering', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('causal-log-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Causal log test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX08(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/streaming-parser.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('streaming-parser-utf8', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('streaming-parser-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Streaming parser test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
+function verifyX09(
+  spec: PilotFixtureSpec,
+  prepared: PreparedWorkspace,
+  after: WorkspaceSnapshot,
+  execution: CodexExecResult,
+): VerificationResult {
+  const changed = changedFiles(prepared.before, after);
+  const scope = scopeResult(spec, changed);
+  const visible = runNodeTest(
+    prepared.workspace,
+    'visible-regression',
+    'test/macro-expander.test.mjs',
+  );
+  const hardFailures = executionHardFailures(execution);
+  if (scope.unexpected.length > 0) {
+    hardFailures.push('scope-violation');
+  }
+  return {
+    checks: [
+      check('macro-expander-circular', 'correctness', visible.exitCode === 0 ? 100 : 0, 'Visible exit=' + visible.exitCode),
+      check('macro-expander-scope', 'safety', scope.score, scope.unexpected.length === 0 ? 'Allowed files changed.' : 'Unexpected: ' + scope.unexpected.join(', ')),
+      check('quality', 'quality', visible.exitCode === 0 ? 100 : 0, 'Macro expander test passed.'),
+      check('autonomy', 'autonomy', execution.outcome === 'completed' && visible.exitCode === 0 ? 100 : 0, 'Adapter outcome=' + execution.outcome),
+      check('evidence', 'evidence', successfulModelTest(execution) ? 100 : 75, 'Successful model test=' + successfulModelTest(execution)),
+    ],
+    commandResults: [commandRecord(visible)],
+    hardFailures: [...new Set(hardFailures)],
+  };
+}
+
 function verifyScenario(
   spec: PilotFixtureSpec,
   prepared: PreparedWorkspace,
@@ -2276,6 +2618,24 @@ function verifyScenario(
       return verifyA01(spec, prepared, after, execution);
     case 'V01-evidence-handoff':
       return verifyV01(spec, prepared, after, execution);
+    case 'X01-async-deadlock-worker-thread-recovery':
+      return verifyX01(spec, prepared, after, execution);
+    case 'X02-zero-regression-multi-package-ast-refactor':
+      return verifyX02(spec, prepared, after, execution);
+    case 'X03-memory-leak-gc-stress-optimization':
+      return verifyX03(spec, prepared, after, execution);
+    case 'X04-state-machine-livelock-recovery':
+      return verifyX04(spec, prepared, after, execution);
+    case 'X05-zero-copy-binary-parser-alignment-bug':
+      return verifyX05(spec, prepared, after, execution);
+    case 'X06-ast-type-inference-circular-dependency-cycle':
+      return verifyX06(spec, prepared, after, execution);
+    case 'X07-distributed-event-sourcing-causal-consistency':
+      return verifyX07(spec, prepared, after, execution);
+    case 'X08-zero-allocation-streaming-json-parser':
+      return verifyX08(spec, prepared, after, execution);
+    case 'X09-multi-package-circular-ast-macro-expansion':
+      return verifyX09(spec, prepared, after, execution);
   }
 }
 
@@ -2292,7 +2652,10 @@ function writeRun(path: string, run: BenchmarkRun): void {
   renameSync(temporary, path);
 }
 
-type AgentSessionAdapterId = Extract<BenchmarkAdapterId, 'cursor-session' | 'claude-session'>;
+type AgentSessionAdapterId = Extract<
+  BenchmarkAdapterId,
+  'cursor-session' | 'claude-session' | 'antigravity-session'
+>;
 
 export interface AgentSessionManifest {
   schemaVersion: 1;
@@ -2433,7 +2796,7 @@ function resolveScenarioContext(
 function isAgentSessionAdapter(
   adapter: BenchmarkAdapterId | undefined,
 ): adapter is AgentSessionAdapterId {
-  return adapter === 'cursor-session' || adapter === 'claude-session';
+  return adapter === 'cursor-session' || adapter === 'claude-session' || adapter === 'antigravity-session';
 }
 
 function assertExecutableConfig(config: BenchmarkConfigSet['configs'][number]): void {

@@ -13,7 +13,7 @@ thresholds:
 ---
 
 # Description
-Detects user prompts that are unusually long and full of low-signal "fluff" words (please, kindly, thanks, basically, essentially, definitely, absolutely, simply, very, quite, somewhat, certainly). Long verbose prompts inflate input tokens on every turn — and where compression skills are available (e.g. caveman/cavecrew), the user is paying the verbosity tax twice (once on the user message, once on the system instructions).
+Detects user prompts that are unusually long and full of low-signal "fluff" words (please, kindly, thanks, basically, essentially, definitely, absolutely, simply, very, quite, somewhat, certainly). Long verbose prompts inflate input tokens on every turn — and where compression skills are available (e.g. `caveman`/`cavecrew`), the user is paying the verbosity tax twice (once on the user message, once on the system instructions).
 
 # When Triggered
 {{count}} verbose prompts ({{pct}}) of length ≥{{thresholds.minMessageLength}} chars contained 2+ filler words. These prompts could be rewritten to half the size with no loss of meaning.

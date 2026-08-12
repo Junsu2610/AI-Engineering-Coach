@@ -1,0 +1,8 @@
+{
+  "name": "x04-state-machine-livelock-recovery",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/event-state-machine.test.mjs"
+  }
+}

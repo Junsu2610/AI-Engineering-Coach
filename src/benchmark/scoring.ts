@@ -88,7 +88,7 @@ function validateScenario(
       errors.push(`${id}.${field} must be a non-empty string`);
     }
   }
-  if (!['small', 'medium', 'large'].includes(scenario.difficulty)) {
+  if (!['small', 'medium', 'large', 'xlarge'].includes(scenario.difficulty)) {
     errors.push(`${id}.difficulty is invalid`);
   }
   for (const field of ['setup', 'acceptance'] as const) {
@@ -277,18 +277,19 @@ export function validateConfigs(value: BenchmarkConfigSet | unknown): string[] {
         'codex-native-exec',
         'cursor-session',
         'claude-session',
+        'antigravity-session',
       ].includes(config.adapter)) {
       errors.push(`${config.id} has invalid adapter ${String(config.adapter)}`);
     }
-    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+    if (['cursor-session', 'claude-session', 'antigravity-session'].includes(config.adapter ?? '')
       && config.codexProvider !== undefined) {
       errors.push(`${config.id} ${config.adapter} configs must not declare codexProvider`);
     }
-    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+    if (['cursor-session', 'claude-session', 'antigravity-session'].includes(config.adapter ?? '')
       && config.reasoningEffort === undefined) {
       errors.push(`${config.id} ${config.adapter} configs require reasoningEffort`);
     }
-    if (['cursor-session', 'claude-session'].includes(config.adapter ?? '')
+    if (['cursor-session', 'claude-session', 'antigravity-session'].includes(config.adapter ?? '')
       && config.mode !== 'controlled') {
       errors.push(`${config.id} ${config.adapter} configs must use controlled mode`);
     }
@@ -311,6 +312,9 @@ export function validateConfigs(value: BenchmarkConfigSet | unknown): string[] {
     }
     if (config.adapter === 'claude-session' && config.harness !== 'claudeext') {
       errors.push(`${config.id} claude-session configs must use the claudeext harness`);
+    }
+    if (config.adapter === 'antigravity-session' && !['antigravity', 'anti', 'agy'].includes(config.harness)) {
+      errors.push(`${config.id} antigravity-session configs must use the antigravity harness`);
     }
     if (config.reasoningEffort !== undefined
       && !['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(config.reasoningEffort)) {
@@ -518,6 +522,7 @@ function validateExecution(execution: BenchmarkExecution | undefined, run: Bench
     'codex-native-exec',
     'cursor-session',
     'claude-session',
+    'antigravity-session',
   ].includes(execution.adapter)) {
     errors.push(`${run.runId}.execution.adapter is invalid`);
   }

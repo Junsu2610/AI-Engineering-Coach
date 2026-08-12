@@ -118,8 +118,8 @@ describe('full benchmark selection', () => {
 
     expect(all).toEqual([...FULL_SCENARIO_IDS]);
     expect(all).not.toContain('L01-checkpoint-resume');
-    expect(manager).toHaveLength(11);
-    expect(coder).toHaveLength(8);
+    expect(manager).toHaveLength(12);
+    expect(coder).toHaveLength(17);
     expect(manager).toEqual(expect.arrayContaining([
       'M02-inbox-triage',
       'P01-manager-decomposition',

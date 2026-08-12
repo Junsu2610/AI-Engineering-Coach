@@ -14,13 +14,16 @@ const DEFAULT_EFFORT = 'high';
 const CODEX_HARNESSES = new Set(['codex', 'codex-cli']);
 const CURSOR_HARNESSES = new Set(['cursor']);
 const CLAUDE_HARNESSES = new Set(['claudeext']);
+const ANTIGRAVITY_HARNESSES = new Set(['anti', 'antigravity', 'agy']);
 const CODEX_EXECUTABLE_HARNESS = 'codex-cli';
 const CODEX_ADAPTER = 'codex-exec';
 const CODEX_NATIVE_ADAPTER = 'codex-native-exec';
 const CURSOR_ADAPTER = 'cursor-session';
 const CLAUDE_ADAPTER = 'claude-session';
+const ANTIGRAVITY_ADAPTER = 'antigravity-session';
 const CURSOR_EXECUTABLE_HARNESS = 'cursor';
 const CLAUDE_EXECUTABLE_HARNESS = 'claudeext';
+const ANTIGRAVITY_EXECUTABLE_HARNESS = 'antigravity';
 const PILOT_SCENARIOS = [
   'U01-root-cause-no-edit',
   'F01-surgical-boundary-fix',
@@ -123,8 +126,11 @@ function resolveExecutionMode(harness, mode) {
   if (CLAUDE_HARNESSES.has(harness)) {
     return CLAUDE_ADAPTER;
   }
+  if (ANTIGRAVITY_HARNESSES.has(harness)) {
+    return ANTIGRAVITY_ADAPTER;
+  }
   throw new Error(
-    `Unknown harness "${harness}". Supported harnesses: codex, codex-cli, cursor, claudeext.`,
+    `Unknown harness "${harness}". Supported harnesses: codex, codex-cli, cursor, claudeext, antigravity (anti, agy).`,
   );
 }
 
@@ -184,11 +190,18 @@ function buildConfig(parsed, executionMode, registry) {
       executableHarness: CURSOR_EXECUTABLE_HARNESS,
       agentName: 'Cursor',
     }
-    : {
-      adapter: CLAUDE_ADAPTER,
-      executableHarness: CLAUDE_EXECUTABLE_HARNESS,
-      agentName: 'Claude Code',
-    };
+    : executionMode === CLAUDE_ADAPTER
+      ? {
+        adapter: CLAUDE_ADAPTER,
+        executableHarness: CLAUDE_EXECUTABLE_HARNESS,
+        agentName: 'Claude Code',
+      }
+      : {
+        adapter: ANTIGRAVITY_ADAPTER,
+        executableHarness: ANTIGRAVITY_EXECUTABLE_HARNESS,
+        agentName: 'Antigravity',
+      };
+
   return {
     slug,
     configId,
@@ -240,7 +253,11 @@ function buildAgentSessionLoop(executionMode, configsRel, configId, resultsRel) 
   const configsFlag = `--configs ${configsRel.replaceAll('\\', '/')}`;
   const configFlag = `--config ${configId}`;
   const resultsFlag = `--results ${resultsRel.replaceAll('\\', '/')}`;
-  const agentName = executionMode === CURSOR_ADAPTER ? 'Cursor' : 'Claude Code';
+  const agentName = executionMode === CURSOR_ADAPTER
+    ? 'Cursor'
+    : executionMode === CLAUDE_ADAPTER
+      ? 'Claude Code'
+      : 'Antigravity';
   const lines = [
     `${executionMode} benchmark loop (no 9Router, no OPENAI_API_KEY):`,
     '',
@@ -327,8 +344,10 @@ function main() {
     );
     if (executionMode === CURSOR_ADAPTER) {
       output.cursorSessionLoop = output.agentSessionLoop;
-    } else {
+    } else if (executionMode === CLAUDE_ADAPTER) {
       output.claudeSessionLoop = output.agentSessionLoop;
+    } else {
+      output.antigravitySessionLoop = output.agentSessionLoop;
     }
   }
 

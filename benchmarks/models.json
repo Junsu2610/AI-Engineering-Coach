@@ -46,7 +46,7 @@
       "mode": "controlled",
       "role": "candidate",
       "configsPath": "benchmarks/configs.cursor-grok-4-5-high.json",
-      "updatedAt": "2026-08-09T08:21:05.364Z",
+      "updatedAt": "2026-08-11T15:47:18.984Z",
       "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark cursor-session runs.",
       "executionMode": "cursor-session"
     },
@@ -96,7 +96,7 @@
       "role": "candidate",
       "configsPath": "benchmarks/configs.claudeext-gpt-5-6-sol-xhigh.json",
       "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark claude-session runs.",
-      "updatedAt": "2026-08-10T15:52:35.235Z"
+      "updatedAt": "2026-08-11T16:05:47.119Z"
     },
     {
       "alias": "claudeext gemini3.6flashxhigh",
@@ -129,6 +129,22 @@
       "configsPath": "benchmarks/configs.codex-gpt-5-6-sol-high-native.json",
       "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark codex runs.",
       "updatedAt": "2026-08-11T10:06:38.335Z"
+    },
+    {
+      "alias": "anti gemini3.6flashhigh",
+      "harness": "anti",
+      "modelEffort": "gemini3.6flashhigh",
+      "model": "gemini-3.6-flash",
+      "reasoningEffort": "high",
+      "configId": "anti-gemini-3.6-flash-controlled-high",
+      "adapter": "antigravity-session",
+      "executionMode": "antigravity-session",
+      "executableHarness": "antigravity",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.anti-gemini-3-6-flash-high.json",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark antigravity-session runs.",
+      "updatedAt": "2026-08-11T15:33:12.592Z"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configs": [
+    {
+      "id": "anti-gemini-3.6-flash-controlled-high",
+      "harness": "anti",
+      "model": "gemini-3.6-flash",
+      "reasoningEffort": "high",
+      "adapter": "antigravity-session",
+      "mode": "controlled",
+      "role": "candidate",
+      "notes": "Auto-generated controlled config for anti gemini3.6flashhigh. Runs execute in the current Antigravity agent session (harness=anti, model=gemini-3.6-flash, effort=high). No 9Router or Codex CLI. Operator-assisted records are diagnostic only."
+    }
+  ]
+}

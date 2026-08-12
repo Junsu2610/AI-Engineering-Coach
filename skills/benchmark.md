@@ -20,6 +20,7 @@ Resolve `$ARGUMENTS`, execute only the adapter that matches the active host, and
 3. Branch by execution mode:
    - `claude-session`: continue only in an active Claude Code session.
    - `cursor-session`: continue only in an active Cursor session. In Claude Code, stop after configuration and tell the user to run the workflow from Cursor.
+   - `antigravity-session`: continue only in an active Antigravity session.
    - `codex-exec`: use the exact printed `full` command after its `OPENAI_API_KEY` and local 9Router preflight.
    - `codex-native-exec`: use the exact printed `full` command after confirming the Codex CLI has an active native login. Do not use 9Router or `OPENAI_API_KEY`.
 4. For the matching active-session adapter, process each scenario and iteration with:
@@ -51,7 +52,7 @@ Resolve `$ARGUMENTS`, execute only the adapter that matches the active host, and
 
 ## Constraints
 
-- `claude-session` and `cursor-session` must not use Codex CLI, 9Router, `OPENAI_API_KEY`, or `127.0.0.1:9011`.
+- `claude-session`, `cursor-session`, and `antigravity-session` must not use Codex CLI, 9Router, `OPENAI_API_KEY`, or `127.0.0.1:9011`.
 - `codex-native-exec` must preserve the signed-in user profile and must not add `--ephemeral`, `--ignore-user-config`, provider overrides, or feature-disable flags.
 - Do not claim a command passed unless command evidence records its successful exit.
 - Do not commit, push, deploy, delete prior results, or modify unrelated dirty files.

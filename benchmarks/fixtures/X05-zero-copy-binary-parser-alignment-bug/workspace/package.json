@@ -1,0 +1,8 @@
+{
+  "name": "x05-zero-copy-binary-parser-alignment-bug",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/binary-log-decoder.test.mjs"
+  }
+}

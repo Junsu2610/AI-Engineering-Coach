@@ -1,0 +1,8 @@
+{
+  "name": "x03-memory-leak-gc-stress-optimization",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/stream-analyzer.test.mjs"
+  }
+}

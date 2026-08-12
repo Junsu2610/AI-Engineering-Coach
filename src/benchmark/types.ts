@@ -32,7 +32,7 @@ export interface BenchmarkScenario {
   id: string;
   title: string;
   category: string;
-  difficulty: 'small' | 'medium' | 'large';
+  difficulty: 'small' | 'medium' | 'large' | 'xlarge';
   /** Tracks the operating role exercised by the scenario. */
   tracks?: BenchmarkTrack[];
   prompt: string;
@@ -73,7 +73,8 @@ export type BenchmarkAdapterId =
   | 'codex-exec'
   | 'codex-native-exec'
   | 'cursor-session'
-  | 'claude-session';
+  | 'claude-session'
+  | 'antigravity-session';
 export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';
 
 export interface CodexProviderConfig {

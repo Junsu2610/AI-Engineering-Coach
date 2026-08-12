@@ -1,0 +1,8 @@
+{
+  "name": "x06-ast-type-inference-circular-dependency-cycle",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/type-resolver.test.mjs"
+  }
+}

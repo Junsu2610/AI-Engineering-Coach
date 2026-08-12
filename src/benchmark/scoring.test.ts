@@ -188,7 +188,7 @@ describe('benchmark contracts', () => {
     expect(validateConfigs(configs)).toEqual([]);
     expect(validateConfigs(pilotConfigs)).toEqual([]);
     expect(suite.repetitions).toBe(1);
-    expect(suite.scenarios).toHaveLength(16);
+    expect(suite.scenarios).toHaveLength(25);
     expect(pilotConfigs.configs[0]?.codexProvider?.baseUrl).toBe('http://127.0.0.1:9011/v1');
     expect(pilotConfigs.configs[0]?.mode).toBe('controlled');
   });
@@ -325,9 +325,9 @@ describe('benchmark contracts', () => {
 
     expect(l01?.fixture).toBeUndefined();
     expect(scenarioTracks(l01!)).toEqual(['manager', 'coder']);
-    expect(manager).toHaveLength(12);
-    expect(coder).toHaveLength(9);
-    expect(shared).toHaveLength(5);
+    expect(manager).toHaveLength(13);
+    expect(coder).toHaveLength(18);
+    expect(shared).toHaveLength(6);
     expect(shared.map(scenario => scenario.id)).toEqual(expect.arrayContaining([
       'C01-large-context-routing',
       'E01-failing-check-recovery',

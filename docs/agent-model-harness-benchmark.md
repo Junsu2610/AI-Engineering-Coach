@@ -21,7 +21,7 @@ If the same model cannot run in both configurations, report only the configurati
 
 ## Suite
 
-[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 16 scenarios covering:
+[`benchmarks/model-harness-suite.json`](../benchmarks/model-harness-suite.json) defines 25 scenarios covering:
 
 - repository understanding and diagnosis;
 - focused and asynchronous bug fixes;
@@ -29,11 +29,12 @@ If the same model cannot run in both configurations, report only the configurati
 - large-context routing and failure recovery;
 - dirty working tree safety and missing authority;
 - evidence-backed reporting and checkpoint recovery;
-- manager task decomposition, inbox triage, coder-proposal review, and source/runtime-boundary safety.
+- manager task decomposition, inbox triage, coder-proposal review, and source/runtime-boundary safety;
+- Level 5, Level 6 & Level 7 God-Mode scenarios: worker thread concurrency deadlock recovery, multi-package AST interpreter refactor, stream listener memory leak optimization, 100 out-of-order event state machine livelock recovery, packed 64-bit BigInt binary log decoder alignment, mutually circular generic type alias resolution, distributed vector clock causal consistency, zero-allocation streaming UTF-8 JSON scanner, and multi-package circular AST macro expansion.
 
-The suite contains 12 Manager-track scenarios, 9 Coder-track scenarios, and 5 shared scenarios. The checked-in Codex adapter has executable hidden verifiers for 15 scenarios: 11 Manager-track and 8 Coder-track scenarios. `L01-checkpoint-resume` remains manual-only because a true resume test requires a harness interruption/resume adapter. Consequently, a complete automated run reports Manager coverage `11/12` and Coder coverage `8/9`; that manual gap is expected rather than a missing automated run.
+The suite contains 15 Manager-track scenarios, 18 Coder-track scenarios, and 8 shared scenarios. The checked-in adapter has executable hidden verifiers for 24 scenarios: 15 Manager-track and 17 Coder-track scenarios. `L01-checkpoint-resume` remains manual-only because a true resume test requires a harness interruption/resume adapter. Consequently, a complete automated run reports Manager coverage `15/15` and Coder coverage `17/18`; that manual gap is expected rather than a missing automated run.
 
-Run each executable scenario three times for a headline result. Every automated scenario receives a fresh disposable repository copy. Randomize configuration order across harnesses, clear warm caches in controlled mode, and keep the initial prompt unchanged. A headline also requires unique scenario identities with meaningful multi-scenario coverage; one-off operator records are diagnostic only.
+Run each of the 15 executable scenarios once (1 iteration = 15 runs total) for a headline result, saving time while maintaining full scenario coverage. Every automated scenario receives a fresh disposable repository copy. Randomize configuration order across harnesses, clear warm caches in controlled mode, and keep the initial prompt unchanged. A headline also requires unique scenario identities with meaningful multi-scenario coverage; one-off operator records are diagnostic only.
 
 The manual checkpoint kit is [`benchmarks/fixtures/L01-checkpoint-resume/README.md`](../benchmarks/fixtures/L01-checkpoint-resume/README.md). It keeps the oracle outside the harness-visible workspace and requires a real interrupt/resume event.
 
@@ -70,6 +71,7 @@ In Cursor or Claude Code, run:
 
 Examples:
 
+- `/benchmark anti gemini3.6flashhigh` — harness `anti` / `antigravity` (current Antigravity agent session), model `gemini-3.6-flash`, effort `high`.
 - `/benchmark cursor grok4.5high` — harness `cursor` (current Cursor agent session), model `grok-4.5`, effort `high`.
 - `/benchmark claudeext gpt5.6solxhigh` — harness `claudeext` (current Claude Code VS Code extension session), model `gpt-5.6-sol`, effort `xhigh`.
 - `/benchmark codex gpt-5.6-sol-ultra` — harness `codex` (Codex CLI via 9Router), model `gpt-5.6-sol`, effort `ultra`.

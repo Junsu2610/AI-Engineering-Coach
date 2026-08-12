@@ -135,6 +135,49 @@ describe('benchmark model script', () => {
     }
   });
 
+  it('resolves anti compact model tokens to an Antigravity agent session config', () => {
+    const fixture = createFixture();
+    try {
+      const result = spawnSync(
+        process.execPath,
+        [fixture.scriptPath, 'anti', 'gemini3.6flashhigh'],
+        { cwd: fixture.root, encoding: 'utf8', windowsHide: true },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('"model": "gemini-3.6-flash"');
+      expect(result.stdout).toContain('"reasoningEffort": "high"');
+      expect(result.stdout).toContain('"executionMode": "antigravity-session"');
+
+      const configsPath = join(
+        fixture.benchmarksDirectory,
+        'configs.anti-gemini-3-6-flash-high.json',
+      );
+      const configs = JSON.parse(readFileSync(configsPath, 'utf8')) as {
+        configs: Array<Record<string, unknown>>;
+      };
+      expect(configs.configs[0]).toMatchObject({
+        id: 'anti-gemini-3.6-flash-controlled-high',
+        harness: 'anti',
+        model: 'gemini-3.6-flash',
+        reasoningEffort: 'high',
+        adapter: 'antigravity-session',
+        mode: 'controlled',
+      });
+
+      const registry = JSON.parse(readFileSync(fixture.registryPath, 'utf8')) as {
+        models: Array<Record<string, unknown>>;
+      };
+      expect(registry.models[0]).toMatchObject({
+        configId: 'anti-gemini-3.6-flash-controlled-high',
+        executionMode: 'antigravity-session',
+        executableHarness: 'antigravity',
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 3 });
+    }
+  });
+
   it('rejects an unsupported harness before writing registry or config files', () => {
     const fixture = createFixture();
     try {

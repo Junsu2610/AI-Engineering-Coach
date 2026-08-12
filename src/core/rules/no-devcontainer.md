@@ -1,6 +1,6 @@
 ---
 id: no-devcontainer
-name: Unsandboxed Terminal Execution
+name: Non-sandboxed Terminal Execution
 group: code-review
 severity: medium
 scope: both

@@ -1,0 +1,8 @@
+{
+  "name": "x01-async-deadlock-worker-thread-recovery",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none test/worker-controller.test.mjs"
+  }
+}

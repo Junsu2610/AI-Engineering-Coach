@@ -9,7 +9,7 @@
       "adapter": "cursor-session",
       "mode": "controlled",
       "role": "candidate",
-      "notes": "Auto-generated controlled config for cursor grok4.5high. Runs execute in the current Cursor agent session (harness=cursor, model=grok-4.5, effort=high). No 9Router or Codex CLI."
+      "notes": "Auto-generated controlled config for cursor grok4.5high. Runs execute in the current Cursor agent session (harness=cursor, model=grok-4.5, effort=high). No 9Router or Codex CLI. Operator-assisted records are diagnostic only."
     }
   ]
 }

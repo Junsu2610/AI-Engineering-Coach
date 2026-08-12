@@ -1,0 +1,9 @@
+{
+  "name": "X09-multi-package-circular-ast-macro-expansion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/macro-expander.test.mjs"
+  }
+}
