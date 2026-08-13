@@ -33,28 +33,31 @@ First user message selects the role.
 | `team-task` | manager writes tasks from approved plan | `MANAGER.md` |
 | `team-auto` | manager delegates existing task-board work | `MANAGER.md` |
 | `team-status` | manager status check | `MANAGER.md` |
-| anything else | manager | `MANAGER.md` |
+| anything else | normal harness routing; not Team mode | none |
 
-## Common Startup
+## Team Common Startup
 
-1. Read `TASKS.md`.
-2. Read `state/STATUS.json` if it exists, otherwise use `state/STATUS.example.json`.
-3. Read `OWNERSHIP.md`.
-4. Read your role playbook.
-5. Check `git status --short`.
+Run this startup only after a recognized Team entrypoint or internal Team role is
+selected. Non-Team requests must not load Team state, task boards, or protocol.
+
+1. Read the nearest project `AGENTS.md` or equivalent entry point.
+2. Read `TASKS.md`.
+3. Read `state/STATUS.json` if it exists, otherwise use `state/STATUS.example.json`.
+4. Read `OWNERSHIP.md` and `PROTOCOL.md`.
+5. Read your role playbook.
+6. Check `git status --short`.
 
 ## Coder Auto-Claim
 
 `coder-mini` is a lightweight internal coder slot for `team-auto`. It is spawned
-only for light, low-risk tasks. Team Agent dispatches Codex workers only.
+only for light, low-risk tasks. The Manager inherits the active model and effort.
 
-- Prefer `gpt-5.6-luna` for `coder-mini` and other light work.
-- Use `gpt-5.6-terra` for normal coding and larger integrations.
-- Reserve `gpt-5.6-sol` for architecture, security, concurrency, and unclear
-  root-cause work.
-- When native spawning inherits the active model, record the actual GPT-5.6
-  selection. Block when the required profile is unavailable; never fall back to
-  GPT-5.4 or older.
+- Route workers with portable profiles: `light`, `standard`, or `deep`.
+- Use `light` for `coder-mini`, `standard` for normal coding, and `deep` for
+  architecture, security, integration, concurrency, or unclear root-cause work.
+- Map profiles to models only when the host supports explicit worker selection.
+  Otherwise inherit the active model and report it. Block an unsatisfied required
+  profile instead of silently substituting a model.
 
 1. Find the first ASSIGNED task matching your slot.
 2. Announce: `Claiming T-<id>: <subject>`.

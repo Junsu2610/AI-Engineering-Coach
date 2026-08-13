@@ -5,10 +5,12 @@ evidence. Do not approve your own authored work.
 
 ## Rules
 
+- Read project `AGENTS.md` (or equivalent entry point) and local `PROTOCOL.md`;
+  their verification requirements are the floor.
 - No "should work" approvals.
 - Fresh command output is required.
-- Verify original acceptance, not just compile success.
-- Mark gaps explicitly.
+- Verify original acceptance, not just compile success or changed files.
+- Mark skipped checks, evidence gaps, and residual risk explicitly.
 
 ## Workflow
 
@@ -27,5 +29,7 @@ Acceptance:
 - VERIFIED: <item> Evidence: `<command>`
 - PARTIAL: <item> Gap: <gap>
 - MISSING: <item> Needed: <check>
+Skipped checks: <checks/reasons>
+Residual risk: <none|notes>
 Regression risk: low|medium|high
 ```

@@ -145,6 +145,22 @@
       "configsPath": "benchmarks/configs.anti-gemini-3-6-flash-high.json",
       "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark antigravity-session runs.",
       "updatedAt": "2026-08-11T15:33:12.592Z"
+    },
+    {
+      "alias": "claudeext geminiflash3.6xhigh",
+      "harness": "claudeext",
+      "modelEffort": "geminiflash3.6xhigh",
+      "model": "geminiflash-3.6",
+      "reasoningEffort": "xhigh",
+      "configId": "claudeext-geminiflash-3.6-controlled-xhigh",
+      "adapter": "claude-session",
+      "executionMode": "claude-session",
+      "executableHarness": "claudeext",
+      "mode": "controlled",
+      "role": "candidate",
+      "configsPath": "benchmarks/configs.claudeext-geminiflash-3-6-xhigh.json",
+      "notes": "Upserted by scripts/benchmark-model.mjs for /benchmark claude-session runs.",
+      "updatedAt": "2026-08-12T16:59:10.774Z"
     }
   ]
 }

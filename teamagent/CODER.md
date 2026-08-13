@@ -2,11 +2,16 @@
 
 ## Coder Rules
 
-1. Edit only files in your ownership scope.
-2. Do not refactor unrelated code.
-3. Make the requested scoped file changes.
-4. Report changed files and a short implementation note.
-6. Do not edit `Q:` or NAS runtime source.
+1. Read the project `AGENTS.md` (or equivalent entry point), task, and local
+   `PROTOCOL.md`; their acceptance and verification rules are the floor.
+2. Edit only files in your ownership scope.
+3. Do not refactor unrelated code.
+4. Prefer RED-GREEN-REFACTOR for behavior changes; record why when test-first is
+   not practical.
+5. Run fresh project-required checks before REVIEW.
+6. Report changed files, checks run and results, skipped checks with reasons,
+   and residual risk. Do not self-approve or claim DONE.
+7. Do not edit `R:` or NAS runtime source.
 
 ## Claim
 
@@ -46,20 +51,28 @@ git worktree add .teamworktrees\coder<N> -b feat/coder<N>-T<id>-<slug> main
 - If scope is unclear, post BLOCKED.
 - If shared file is needed, post SHARED-FILE and stop.
 
-## Completion Note
+## Review Note
 
-Keep the task in ASSIGNED and add:
+Move the task to REVIEW and add:
 
 ```text
-**COMPLETE - T-<id>** by coder<N> @ <ISO timestamp>
+**REVIEW - T-<id>** by coder<N> @ <ISO timestamp>
 Branch: <branch>
 Changed: <short summary>
+Evidence:
+- `<command>`: PASS|FAIL
+Skipped checks:
+- <check>: <reason>
 Context:
 - Memory: <PROJECT_GOAL/TASKS/plans/docs used>
 - Files/logs: <files/logs/tests inspected>
 - Skills: <tools/skills used>
-Ready: manager-closeout
+Residual risk: <none|notes>
+Needs: manager|reviewer|security|verifier|qa
 ```
+
+A changed-file report is scope information, not completion evidence. Only
+Manager may approve DONE after fresh required evidence.
 
 ## Blocked
 

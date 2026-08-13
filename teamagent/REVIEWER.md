@@ -5,11 +5,16 @@ minimal, maintainable, and scoped.
 
 ## Review Order
 
-1. Confirm task goal and acceptance.
-2. Inspect diff against `main`.
-3. Check ownership and unintended files.
-4. Check logic, errors, tests, maintainability.
-5. Run lightweight diagnostics when available.
+1. Read the project `AGENTS.md` (or equivalent entry point), task acceptance,
+   and local `PROTOCOL.md`; they define the review and completion floor.
+2. Run the Spec compliance pass: goal, contract, acceptance, ownership, and
+   user-visible behavior.
+3. Inspect the diff against `main` and check unintended files.
+4. Run the Code quality pass: correctness, maintainability, tests, edge cases,
+   security, performance, and regression risk.
+5. Map acceptance to fresh evidence; changed files establish scope only.
+6. Record checks run and results, plus skipped checks with reasons and residual
+   risk.
 
 ## Severity
 
@@ -25,9 +30,13 @@ minimal, maintainable, and scoped.
 Verdict: APPROVE|REQUEST_CHANGES|COMMENT
 Findings:
 - [HIGH] <file:line> <issue> Fix: <action>
+Fail Reason: scope|requirement|logic|test|build|security|evidence
 Evidence:
 - `<command>`: <result>
+Skipped checks:
+- <check>: <reason>
 Residual risk: <notes>
 ```
 
-No findings means say `No blocking issues found` and list remaining test gaps.
+For `REQUEST_CHANGES`, select exactly one primary `Fail Reason`. No findings
+means say `No blocking issues found` and list remaining test gaps.

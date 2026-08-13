@@ -35,6 +35,8 @@ summary/
 
 # Local model and harness benchmark outputs (ignored by default)
 benchmarks/results/**
+commands-*.json
+X*-cmds.json
 # Retained published/diagnostic cursor-session runs
 !benchmarks/results/cursor-grok-4-5-high-full-3x/
 !benchmarks/results/cursor-grok-4-5-high-full-3x/**
