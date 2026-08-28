@@ -315,6 +315,7 @@
     "knip": "knip",
     "typecheck": "tsc --noEmit",
     "check:harness": "node scripts/check-agents-budget.mjs",
+    "sync:harness": "node scripts/sync-harness.mjs",
     "check:docs": "npm run spellcheck && npm run check:harness",
     "check": "run-p typecheck lint spellcheck knip lockfile-lint && run-s test:coverage check:harness",
     "check-size": "node scripts/check-bundle-size.mjs",

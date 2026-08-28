@@ -1,0 +1,16 @@
+---
+description: AI Engineering Coach Unified Harness Rules
+globs: *
+alwaysApply: true
+---
+# Unified Project Context
+
+Always refer to:
+1. `AGENTS.md` - Master specification, boundaries, skills, and verification commands.
+2. `docs/CURRENT_TASK.md` - Active task, decisions log, and next steps.
+
+# Core Guardrails
+- Language: Vietnamese to user, English in code and commit messages.
+- TypeScript strict mode, zero telemetry, read-only user session logs.
+- Offload heavy compute to `src/core/*-worker.ts`.
+- Run `npm test` after modifying code. Update `docs/CURRENT_TASK.md` when completing a subtask.
